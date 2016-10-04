@@ -102,7 +102,7 @@ def Labels_split(studydir,nameRois,nameMaps_dir,threshold_vox = 200):
     Cette fonction éclate en rois 3D les cartes de ROIs issue de la fonction ICAwatershed.
     Paramètres:
     - studydir, string: nomm du dossier de travail
-    - nameRois, string: nom du dossier ou seront écrits les ROIs
+    - nameRois, string: prefixe du dossier ou seront écrits les ROIs
     - treshold_vox, float: seuil en voxels en deca duquel la région ne sera pas conservés. Par défautls 200 voxels.
     - nameMaps_dir, string: nom du dossier ou sont les cartes isssue de ICAwatershed.py 
     """
@@ -131,16 +131,36 @@ def Labels_split(studydir,nameRois,nameMaps_dir,threshold_vox = 200):
                 nb.save(out_img,name)
                 roi_num += 1
 
+def create_3D_labels_file(studydir,roisDirName,name3Dlabelfile):
+    
 
+    #roi_dir = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/3Drois_clean_watershed_thresh01_d35_200vox'
+    #out_dir = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/Labelmaps_clean_watershed_thresh01_d35'
+    roi_list=glob.glob(os.path.join(studydir,roisDirName,'roi*.nii'))
+    name=os.path.join(studydir,name3Dlabelfile+'.nii')
+    new_dat = np.zeros(nb.load(roi_list[0]).shape)
+    for i in range(len(roi_list)):
+        roi_obj = nb.load(roi_list[i])
+        roi_dat = roi_obj.get_data()
+        print(str((i+1)*np.max(roi_dat)))
+        new_dat = new_dat + (i+1)*roi_dat
+
+    outimage = nb.Nifti1Image(new_dat, roi_obj.affine)
+    nb.save(outimage,name)                
+                
+threshold_vox = 200               
 landscape_4D = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/ICA/controls_all_DictionaryLearning_alpha15_20_t_auto.nii'
 mask_file = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/masks/ext_filled_voronoi_resampled.nii'
 studydir = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/TEST_ATLAS'
 nameMaps = 'test'
 noise_maps = [11,15]
-nameRois = 'test_200vox'
+nameRois = 'ROIs'
 nameMaps_dir = 'test_thresh0.1_dist3.5'
+roisDirName = nameRois + '_' + nameMaps_dir + '_' + str(threshold_vox) + 'vox'
 
 
 ICAwatershed(landscape_4D,mask_file,studydir,nameMaps,noise_maps,cervelet='non')
 
 Labels_split(studydir,nameRois,nameMaps_dir)
+
+create_3D_labels_file(studydir,roisDirName,'test')
