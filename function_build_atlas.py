@@ -154,13 +154,3 @@ def create_3D_labels_file(studydir,roisDirName,name3Dlabelfile):
 
     outimage = nb.Nifti1Image(new_dat, roi_obj.affine)
     nb.save(outimage,name)                
-                
-threshold_vox = 200               
-landscape_4D = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/ICA/controls_all_DictionaryLearning_alpha15_20_t_auto.nii'
-mask_file = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/masks/ext_filled_voronoi_resampled.nii'
-studydir = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/TEST_ATLAS'
-nameMaps = 'test'
-noise_maps = [11,15]
-nameRois = 'ROIs'
-nameMaps_dir = 'test_thresh0.1_dist3.5'
-roisDirName = nameRois + '_' + nameMaps_dir + '_' + str(threshold_vox) + 'vox'
