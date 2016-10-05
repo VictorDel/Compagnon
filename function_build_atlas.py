@@ -13,6 +13,12 @@ import errno
 import glob
 
 def mkdir_p(path):
+    """
+    Création d'un dossier.
+    Parametres:
+    - path, string: chemin complet du dossier a crée
+    Cette fonction IGNORE l'erreur 17 qui se produit lorsque le dossier existe deja.
+    """
     try:
         os.makedirs(path)
     except OSError as exc:  # Python >2.5
@@ -40,7 +46,6 @@ def ICAwatershed(landscape_4D,mask_file,studydir,nameMaps,noise_maps,distance=3.
     """
     i=0
     out_dir = studydir+'/'+nameMaps+'_'+'thresh'+str(threshold)+'_'+'dist'+str(distance)
-  #  noise_maps = [11,15] #unwanted maps (noise, white...)
     mkdir_p(out_dir)
     for landscape in image.iter_img(landscape_4D):
         name = 'map_'+str(i)
@@ -140,9 +145,6 @@ def create_3D_labels_file(studydir,roisDirName,name3Dlabelfile):
     name3Dlabelfile, string: nom du fichier 3D qui sera crée au format NifTi.
     """
     
-
-    #roi_dir = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/3Drois_clean_watershed_thresh01_d35_200vox'
-    #out_dir = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/Labelmaps_clean_watershed_thresh01_d35'
     roi_list=glob.glob(os.path.join(studydir,roisDirName,'roi*.nii'))
     name=os.path.join(studydir,name3Dlabelfile+'.nii')
     new_dat = np.zeros(nb.load(roi_list[0]).shape)
