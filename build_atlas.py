@@ -132,6 +132,13 @@ def Labels_split(studydir,nameRois,nameMaps_dir,threshold_vox = 200):
                 roi_num += 1
 
 def create_3D_labels_file(studydir,roisDirName,name3Dlabelfile):
+    """
+    Cette fonction crée un crée un fichier 3D de label a partir des ROIs 3D issue de Labels_Split.
+    Paramètres:
+    studydir, string: nom du dossier d'étude de création de l'atlas
+    roisDirName, string: nom du dossier ou se trouve les Rois issue de Labels_Split
+    name3Dlabelfile, string: nom du fichier 3D qui sera crée au format NifTi.
+    """
     
 
     #roi_dir = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/3Drois_clean_watershed_thresh01_d35_200vox'
