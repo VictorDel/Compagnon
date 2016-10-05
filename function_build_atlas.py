@@ -143,16 +143,19 @@ def create_3D_labels_file(studydir,roisDirName,name3Dlabelfile):
     studydir, string: nom du dossier d'étude de création de l'atlas
     roisDirName, string: nom du dossier ou se trouve les Rois issue de Labels_Split
     name3Dlabelfile, string: nom du fichier 3D qui sera crée au format NifTi.
+    
     """
     
     roi_list=glob.glob(os.path.join(studydir,roisDirName,'roi*.nii'))
     name=os.path.join(studydir,name3Dlabelfile+'.nii')
     new_dat = np.zeros(nb.load(roi_list[0]).shape)
+    
     for i in range(len(roi_list)):
         roi_obj = nb.load(roi_list[i])
         roi_dat = roi_obj.get_data()
-        print(str((i+1)*np.max(roi_dat)))
+        #print(str((i+1)*np.max(roi_dat)))
         new_dat = new_dat + (i+1)*roi_dat
-
+    
     outimage = nb.Nifti1Image(new_dat, roi_obj.affine)
-    nb.save(outimage,name)                
+    nb.save(outimage,name)
+    print('Vous avez généré un atlas de',len(roi_list),'ROIs, enregistrées dans le fichier',name3Dlabelfile+'.nii','dans le dossier',studydir)
