@@ -3,7 +3,9 @@ import function_build_atlas
 """
 Fichier main de la création d'atlas.
 Les fonction a importer sont dans le fichier function_build_atlas.py
+
 """
+
 #distance entre deux maximas locaux pour initier l'algorithme de montée des eaux
 distance = 3.5
 #seuil pour les cartes du Dictionnay learning
@@ -31,7 +33,6 @@ name3Dlabelfile = 'test'
 #presence du cervelet dans l'atlas ?
 cervelet = 'non'
 
-
 #Seuil et segmentation des cartes avec un algorithme montée des eaux
 #pour voir l'aide de la fonction : ICAwatershed?
 function_build_atlas.ICAwatershed(landscape_4D,mask_file,studydir,nameMaps,noise_maps,distance,threshold,cervelet)
@@ -43,3 +44,6 @@ function_build_atlas.Labels_split(studydir,nameRois,nameMaps_dir)
 #Crée un fichier 3D de Labels avec les ROIs issue de Labels_split
 #pour voir l'aide de la fonction: create_3D_labels_file?
 function_build_atlas.create_3D_labels_file(studydir,roisDirName,name3Dlabelfile)
+
+#Crée un fichier 4D a partir des ROIs issue de Labels_split au format nii.
+function_build_atlas.concatenate_Nifti(studydir,roisDirName,'TEST4D_mafonction')
