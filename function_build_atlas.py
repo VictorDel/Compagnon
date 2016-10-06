@@ -11,6 +11,10 @@ import os
 import sys
 import errno
 import glob
+from nilearn.plotting import (plot_prob_atlas, find_xyz_cut_coords, show,plot_stat_map)
+from nilearn.image import *
+from nilearn.regions import RegionExtractor
+from nilearn.image import concat_imgs, load_img
 
 def mkdir_p(path):
     """
@@ -158,4 +162,19 @@ def create_3D_labels_file(studydir,roisDirName,name3Dlabelfile):
     
     outimage = nb.Nifti1Image(new_dat, roi_obj.affine)
     nb.save(outimage,name)
-    print('Vous avez généré un atlas de',len(roi_list),'ROIs, enregistrées dans le fichier',name3Dlabelfile+'.nii','dans le dossier',studydir)
+    print('Vous avez généré un atlas de',len(roi_list),'ROIs, enregistrées dans le fichier 3D de labels',name3Dlabelfile+'.nii','dans le dossier',studydir)
+    
+def concatenate_Nifti(studydir,roisdirs_name,name_file):
+    """
+    Cette fonction crée un fichier 4D à partir de la liste des ROIs
+    Paramètres:
+    studydir, string: nom du dossier d'étude de création de l'atlas
+    roisdirs_Name, string: nom du dossier ou se trouve les Rois issue de Labels_Split
+    name_file, string: nom du fichier 4D généré qui constituera l'atlas
+    
+    """
+    rois_files = glob.glob(os.path.join(studydir,roisdirs_name,'roi*.nii'))
+    rois_concatenate = concat_imgs(rois_files)
+    nb.save(rois_concatenate,os.path.join(studydir,name_file+'.nii'))
+    print('Le fichier 4D contenant l\'atlas se trouve dans le dossier',studydir)
+    
