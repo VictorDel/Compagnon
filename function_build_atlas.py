@@ -15,6 +15,7 @@ from nilearn.plotting import (plot_prob_atlas, find_xyz_cut_coords, show,plot_st
 from nilearn.image import *
 from nilearn.regions import RegionExtractor
 from nilearn.image import concat_imgs, load_img
+import csv
 
 def mkdir_p(path):
     """
@@ -177,4 +178,39 @@ def concatenate_Nifti(studydir,roisdirs_name,name_file):
     rois_concatenate = concat_imgs(rois_files)
     nb.save(rois_concatenate,os.path.join(studydir,name_file+'.nii'))
     print('Le fichier 4D contenant l\'atlas se trouve dans le dossier',studydir)
+    
+def basics_info_atlas(atlas_filedir,atlas_name,threshold_carte,threshold_vox,distance_watershed,presence_cereb):
+    """
+    Cette fonction affiche et enregistre dans un .csv les informations basiques concernant la taille de l'atlas. Elle reprend les
+    paramètres des fonctions précedentes.
+    """
+    
+    atlas4D = os.path.join(atlas_filedir,atlas_name+'.nii')
+    
+    atlas_img = load_img(atlas4D)
+    atlas_img_data = atlas_img.get_data()
+    dim_atlas_img = atlas_img_data.shape
+    n_roi = dim_atlas_img[3]
+
+    numvox_array = np.zeros(n_roi)
+
+    for r in range(n_roi):
+        roi_img = index_img(atlas_img,r)
+        roi_data = roi_img.get_data()
+        sum_vox = np.sum(roi_data)
+        numvox_array[r] = sum_vox
+        
+    moy_vox = numvox_array.mean()
+    min_roi_vox = numvox_array.min()
+    max_roi_vox = numvox_array.max()
+    data_dict = {"Nom de l'atlas":atlas_name,"Adresse de l'atlas":atlas4D,"Nombre de Roi":n_roi,
+                 "Threshold des cartes DictionnaryLearning":threshold_carte,"Threhold nombre de voxels":threshold_vox,
+                 "Distance pic à pic watershed":distance_watershed,"Prise en compte du cervelet":presence_cereb,
+                 "Moyenne en voxel":moy_vox, "Région la plus petite":min_roi_vox, "Région la plus grande":max_roi_vox}
+    
+    with open(atlas_filedir+'/'+atlas_name+'.csv','w+') as basic_info_csv:
+        writer = csv.writer(basic_info_csv)
+        for key, value in data_dict.items():
+            writer.writerow([key, value])
+
     
