@@ -47,3 +47,7 @@ function_build_atlas.create_3D_labels_file(studydir,roisDirName,name3Dlabelfile)
 
 #Crée un fichier 4D a partir des ROIs issue de Labels_split au format nii.
 function_build_atlas.concatenate_Nifti(studydir,roisDirName,'TEST4D_mafonction')
+
+#Enregistre les informations basiques concernant l'atlas généré dans le dossier studydir dans un .csv
+function_build_atlas.basics_info_atlas(atlas_filedir=studydir,atlas_name=atlas4D,threshold_carte=threshold
+                                       ,distance_watershed=distance,presence_cereb=cervelet,threshold_vox=threshold_vox)
