@@ -9,234 +9,26 @@ import nibabel as nb
 import glob
 import matplotlib
 import re
-#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import scipy.cluster.hierarchy as sch
 import nilearn.decomposition
-#import joblib
-#import random
 import scipy
-#import math
 import nilearn.connectome
 from matplotlib.backends import backend_pdf
 from copy import deepcopy
 from nilearn import image
 from sklearn import covariance 
-#from sklearn import cross_validation
-#from sklearn import utils
 from nilearn import datasets
-#from nilearn.input_data import NiftiLabelsMasker
 from nilearn.input_data import NiftiMapsMasker
 from nilearn import plotting
 from sklearn.svm import LinearSVC
 from sklearn.cross_validation import StratifiedKFold, cross_val_score, StratifiedShuffleSplit
 
-def _NPtest(m1, m2, axis, paired):
-    """non parametric tests
-
-    Parameters
-    ==========
-    baseline : 3D numpy.ndarray
-        Baseline matrices over subjects.
-    follow_up : 3D numpy.ndarray
-        Follow-up matrices over subjects.
-    axis : int
-        Subjects axis.
-    paired : bool
-        If True, the wilcoxonrank test is computed on two related samples of scores.
-        else the mannwhitneyu test is computed
-    Returns
-    ======
-    effect : array
-        The mean effect, difference between follow_up and baseline.
-    pval : array
-        The p-values of the test.
-    """   
-        
-    #scipy.stats.ks_2samp(data1, data2)
-        
-        
-    #pval[i,j] = scipy.stats.ks_2samp(m1[:,i,j], m2[:,i,j]).pvalue
-    effect = m2.mean(axis=axis) - m1.mean(axis=axis)
-        
-    pval = np.ones(m1[0].shape)
-    
-    for i in range(m1[0].shape[0]):
-        for j in range(m1[0].shape[0]):
-            if i!=j:
-                if paired:
-                    pval[i,j] = scipy.stats.wilcoxon(m1[:,i,j], m2[:,i,j],
-                            zero_method='wilcox', correction=True).pvalue
-                else:
-                    #pval[i,j] = scipy.stats.mannwhitneyu(m1[:,i,j], m2[:,i,j],
-                    #        use_continuity=True).pvalue
-                    pval[i,j] = scipy.stats.ranksums(m1[:,i,j], m2[:,i,j]).pvalue        
 
 
-    return effect, pval
-
-def _ttest2(baseline, follow_up, axis, paired):
-    """Paired or independent two samples Student t-test.
-
-    Parameters
-    ==========
-    baseline : 3D numpy.ndarray
-        Baseline matrices over subjects.
-    follow_up : 3D numpy.ndarray
-        Follow-up matrices over subjects.
-    axis : int
-        Subjects axis.
-    paired : bool
-        If True, the t-test is computed on two related samples of scores.
-
-    Returs
-    ======
-    effect : array
-        The mean effect, difference between follow_up and baseline.
-    pval : array
-        The p-values of the test.
-    """
-    effect = follow_up.mean(axis=axis) - baseline.mean(axis=axis)
-    if paired:
-        test = scipy.stats.ttest_rel
-    else:
-        test = scipy.stats.ttest_ind
-
-    _, pval = test(baseline, follow_up, axis=axis)
-    return effect, pval
-
-def fdr(p):
-    # TODO: rewrite in python style
-    """ FDR correction for multiple comparisons.
-
-    Computes FDR corrected p-values from an array of multiple-test false
-    positive levels (uncorrected p-values) a set after removing nan values,
-    following Benjamin & Hockenberg procedure.
-
-    Parameters
-    ==========
-    p : numpy.ndarray
-        Uncorrected p-values.
-
-    Returns
-    =======
-    p_fdr : numpy.ndarray
-        Corrected p-values.
-    """
-    if p.ndim == 1:
-        n = p.shape[0]
-        p_fdr = np.nan + np.ones(p.shape)
-        idx = p.argsort()
-        p_sorted = p[idx]
-        n = np.sum(np.logical_not(np.isnan(p)))
-        if n > 0:
-            qt = np.minimum(1, n * p_sorted[0:n] / (np.arange(n)+1))
-            min1 = np.inf
-            for k in range(n - 1, -1, -1):
-                min1 = min(min1, qt[k])
-                p_fdr[idx[k]] = min1
-    else:
-        p_fdr = np.array([fdr(p[j]) for j in range(p.shape[1])])
-    return p_fdr
-    
-def corr_to_Z(corr, tol=1e-7):
-    """Applies Z-Fisher transform. """
-    Z = corr.copy()  # avoid side effects
-    corr_is_one = 1.0 - abs(corr) < tol
-    Z[corr_is_one] = np.inf * np.sign(Z[corr_is_one])
-    Z[np.logical_not(corr_is_one)] =         np.arctanh(corr[np.logical_not(corr_is_one)])
-    return Z
-    
-def partperm(List):
-    #returns list of all possible partial permutations in lists of common first elements
-    #for instance partperm[0,1,2,] = [[[0, 1], [0, 2]], [[1, 0], [1, 2]], [[2, 0], [2, 1]]]
-    L=[]
-    for f in List : 
-        List_tmp = List[:]
-        del(List_tmp[List.index(f)])
-        L_tmp=[]        
-        for g in List_tmp :
-            L_tmp.append([f,g])
-        L.append(L_tmp)    
-    return L
-    
-def LogL(M_1,M_2):
-    #calculate log likelihood between two matrices  
-    LL= -np.trace(np.dot(scipy.linalg.inv(M_1),M_2))/2-np.log(np.linalg.det(M_1))/2-np.shape(M_1)[0]/2*np.log(2*np.pi)
-    return LL
-
-
-
-
-def matReorg(mat,label,indices='none'):
-
-    # Compute hierarchical clustering to reorganize matrix
-    #mat matrix to reorganize
-    #label : nom des indices de la matrice (dans l'ordre)
-    if indices == 'none' :   
-        Y = sch.linkage(mat, method='centroid')
-        Z = sch.dendrogram(Y, orientation='right')
-        indices = Z['leaves']
-    new_mat=deepcopy(mat)
-    new_mat = new_mat[indices,:]
-    new_mat = new_mat[:,indices]
-    new_label=[label[i] for i in indices]
-    return new_mat,new_label,indices
-    
-    
-        
-def plot_matrices(mat,span ,labels,label_colors, title,colmap="bwr",labelsize=4 ):
-    #plot matrices
-    #define titles and colors
-    fig = plt.figure()
-    ax = plt.subplot(111)
-    cax = ax.imshow(mat, interpolation="nearest",vmin=span[0], vmax=span[1],cmap=plt.cm.get_cmap(colmap))
-    plt.title("%s" % title)
-    # Add labels and adjust margins
-    ax.set_xticks([i for i in range(0, len(labels))])
-    ax.set_xticklabels(labels, rotation=90)
-    ax.set_yticks([i for i in range(0, len(labels))])
-    ax.set_yticklabels(labels)
-    ax.yaxis.tick_left()
-    for xtick, color in zip(ax.get_xticklabels(), label_colors):
-        xtick.set_color(color)
-        xtick.set_fontsize(labelsize)
-    for ytick, color in zip(ax.get_yticklabels(), label_colors):
-        ytick.set_color(color)
-        ytick.set_fontsize(labelsize)
-    #plt.subplots_adjust(left=.01, bottom=.3, top=.99, right=.62)    
-    cbar=fig.colorbar(cax,ticks = span)
-    cbar.ax.set_yticklabels(span)
-    #plt.colorbar.make_axes(location="left")         
-
-       
-def symetrize(M,tri = 'upper', diag = 1):
-    #symetrize M according to 'upper' or 'lower' triangle and set diag to diag
-    M_sym=deepcopy(M)             
-    for i in range(np.shape(M)[0]):
-        for j in range(np.shape(M)[1]):
-            if i==j:
-                M_sym[i][j] = diag
-            else:
-                if tri == 'lower':
-                    if i<j :                    
-                        M_sym[i][j] = M[j][i]
-                elif tri == 'upper':
-                    if i<j :
-                        M_sym[np.shape(M)[0]-i-1][np.shape(M)[1]-j-1] = M[np.shape(M)[1]-j-1][np.shape(M)[0]-i-1]
-    return M_sym    
-def sym_fdr(M):
-    M_sym_fdr=deepcopy(M)
-    for i in range(np.shape(M)[0]):
-        for j in range(i+1,np.shape(M)[1]):
-            M_sym_fdr[i][j]=max(M[i][j],M[j][i])
-            M_sym_fdr[j][i]=max(M[i][j],M[j][i])            
-    return M_sym_fdr
-
-def scaling_PSC(time_serie,time_dim):
-    T=100*time_serie/np.mean(time_serie,axis=time_dim)
-    return T
-
+import compagnon_statistique as cp_stats
+import compagnon_toolbox as cp_tools
+import compagnon_visualize as cp_plt
 
 #memory cache
 mem_dir = '/media/db242421/db242421_data/Script_Python/Compagnon/nilearn_cache/'
@@ -518,7 +310,7 @@ for func_type in func_type_list:
     mean_connectivity_matrix[func_type] = mean_connectivity
     
 
-comp_list=partperm(func_type_list)
+comp_list=cp_tools.partperm(func_type_list)
    
 with backend_pdf.PdfPages(save_report) as pdf:
     for g_index in range(len(func_type_list)+1):    
@@ -541,8 +333,8 @@ with backend_pdf.PdfPages(save_report) as pdf:
                 m_span = np.max(np.abs(Mean_mat))                
                 span = [-m_span,m_span]
             #reorganize matrix with hierarchical clustering
-            Mean_mat_r,rois_r,I = matReorg(Mean_mat,labels_ref)           
-            plot_matrices(Mean_mat_r,span ,rois_r,label_colors, 'Average '+func_type + ' ' + kind+ ' across subjects\nTotal average for '+kind+' = '+str(Mean_tot) ,colmap ="bwr",labelsize=l) 
+            Mean_mat_r,rois_r,I = cp_tools.matReorg(Mean_mat,labels_ref)           
+            cp_plt.plot_matrices(Mean_mat_r,span ,rois_r,label_colors, 'Average '+func_type + ' ' + kind+ ' across subjects\nTotal average for '+kind+' = '+str(Mean_tot) ,colmap ="bwr",labelsize=l) 
             pdf.savefig()
             plt.close()
             
@@ -550,8 +342,8 @@ with backend_pdf.PdfPages(save_report) as pdf:
             paired = Paired
             if kind in ['correlation', 'partial correlation']:
                 # Z-Fisher transform
-                g1 = corr_to_Z(np.asarray(individual_connectivity_matrices [comp[0]] [kind]))    
-                g2 = corr_to_Z(np.asarray(individual_connectivity_matrices [comp[1]] [kind]))
+                g1 = cp_stats.corr_to_Z(np.asarray(individual_connectivity_matrices [comp[0]] [kind]))    
+                g2 = cp_stats.corr_to_Z(np.asarray(individual_connectivity_matrices [comp[1]] [kind]))
             else :
                 
                 g1 = np.asarray(individual_connectivity_matrices[comp[0]][kind] )    
@@ -579,8 +371,8 @@ with backend_pdf.PdfPages(save_report) as pdf:
                             print ('Warning: number of subjects different between ' + comp[0] + ' and ' +  comp[1] + ' for '+ kind)
                             print('Ttest cant be paired')
                             paired = False
-                        t2[0][i][j]=_NPtest(testies_1, testies_2, axis = 0, paired = paired)[0]
-                        t2[1][i][j]=_NPtest(testies_1, testies_2, axis = 0, paired = paired)[1]
+                        t2[0][i][j]=cp_stats._NPtest(testies_1, testies_2, axis = 0, paired = paired)[0]
+                        t2[1][i][j]=cp_stats._NPtest(testies_1, testies_2, axis = 0, paired = paired)[1]
 
                 #t2 = _NPtest(g1_, g2_, axis = 0, paired = paired)
             else:
@@ -596,14 +388,14 @@ with backend_pdf.PdfPages(save_report) as pdf:
                             print('Ttest cant be paired')
                             paired = False
 
-                        t2[0][i][j]=_ttest2(testies_1, testies_2, axis = 0, paired = paired)[0]
-                        t2[1][i][j]=_ttest2(testies_1, testies_2, axis = 0, paired = paired)[1]
+                        t2[0][i][j]= cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[0]
+                        t2[1][i][j]= cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[1]
 
                 #t2 = _ttest2(g1, g2, axis = 0, paired = paired)
             if MC_correction == 'FDR':            
-                fdr_correction = fdr(t2[1][:][:])
+                fdr_correction = cp_stats.fdr(t2[1][:][:])
                 fdr_correction[np.isnan(fdr_correction)] =1.            
-                t2_corrected = sym_fdr(fdr_correction) #fdr multiple comparison correction                                            
+                t2_corrected = cp_stats.sym_fdr(fdr_correction) #fdr multiple comparison correction                                            
             elif MC_correction == 'Bonferoni':
                 
                 b_factor = (n_r*n_r)/2. #bonferoni correction factor = number of pairs of regions
@@ -615,18 +407,18 @@ with backend_pdf.PdfPages(save_report) as pdf:
             thresholded[np.isnan(thresholded)] = 1.           
             thresholded[thresholded>p] = 1.            
             logarized = -np.log(thresholded)            
-            sym = symetrize(logarized)            
+            sym = cp_tools.symetrize(logarized)            
             sym_mask = deepcopy(sym) 
             sym_mask[np.nonzero(sym)] = 1.
             sig_effect = np.multiply(sym_mask,t2[0][:][:])
             plotting.plot_connectome(sig_effect, coords_ref,node_color=label_colors,title=  comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' +' Paired = ' + str(paired) +' '+ MC_correction+' corrected p='+ str(p))                                
             pdf.savefig()    
             plt.close()           
-            plot_matrices(matReorg(t2_corrected,labels,I)[0],[0,p] ,rois_r,label_colors, comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' + ' Paired = ' + str(paired)+' ' + MC_correction+' corrected',colmap ="hot",labelsize=l)                                           
+            cp_plt.plot_matrices(cp_tools.matReorg(t2_corrected,labels,I)[0],[0,p] ,rois_r,label_colors, comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' + ' Paired = ' + str(paired)+' ' + MC_correction+' corrected',colmap ="hot",labelsize=l)                                           
             
             pdf.savefig()
             plt.close()
-            plot_matrices(matReorg(t2[0][:][:],labels,I)[0],[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
+            cp_plt.plot_matrices(cp_tools.matReorg(t2[0][:][:],labels,I)[0],[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
             pdf.savefig()
             plt.close()           
                        
@@ -660,7 +452,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
                                 Mm = deepcopy(individual_connectivity_matrices[c[1]]['correlation'][s]) #correlation matrix of subject [sub_list[n] for second group of first comparison in c         
                                 Mm=np.delete(Mm,ntwk_out,axis = 0)
                                 Mm=np.delete(Mm,ntwk_out,axis = 1)         
-                                LL = LogL(np.asarray(Md),np.asarray(Mm))
+                                LL = cp_stats.LogL(np.asarray(Md),np.asarray(Mm))
                                 
                                 log_vector.append(LL)
                             log_vectors[name]=log_vector
@@ -674,9 +466,9 @@ with backend_pdf.PdfPages(save_report) as pdf:
                         fig_ticks.append(name1+'\nVS\n'+name2)
                         
                         if stat_type =='np':
-                            t2_ = _NPtest(np.asarray(log_vectors[name1]), np.asarray(log_vectors[name2]), axis = 0, paired = Paired)
+                            t2_ = cp_stats._NPtest(np.asarray(log_vectors[name1]), np.asarray(log_vectors[name2]), axis = 0, paired = Paired)
                         else:
-                            t2_ = _ttest2(np.asarray(log_vectors[name1]), np.asarray(log_vectors[name2]), axis = 0, paired = Paired)                        
+                            t2_ = cp_stats._ttest2(np.asarray(log_vectors[name1]), np.asarray(log_vectors[name2]), axis = 0, paired = Paired)                        
                 
                         t2log.append(t2_[1]*Bonf)
                         save_p.write(str(t2_[1]*Bonf)+'  ') 
