@@ -19,7 +19,7 @@ mask_file = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/masks
 #Dossier d'etude ou seront stockés les différents fichiers necessaire à la création de l'atlas
 studydir = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/TEST_ATLAS'
 #suffixe du dossier ou seront crées les cartes issue de ICAwatershed
-nameMaps = 'test'
+nameMaps = 'AVCnn'
 #numéro des cartes non pertinentes isssue du dictionnary learning
 noise_maps = [11,15]
 #suffixe du dossier ou seront les ROIs sortie de Labels_split
@@ -29,9 +29,10 @@ nameMaps_dir = nameMaps + '_' + 'thresh' + str(threshold) + '_' + 'dist' + str(d
 #nom du dossier ou sont stockés les ROIs sortie de Labels_split
 roisDirName = nameRois + '_' + nameMaps_dir + '_' + str(threshold_vox) + 'vox'
 #nom du fichier 3D de labels
-name3Dlabelfile = 'test'
+name3Dlabelfile = 'AVCnn'
 #presence du cervelet dans l'atlas ?
 cervelet = 'non'
+atlas_4D_name = 'AVCnn4D'
 
 #Seuil et segmentation des cartes avec un algorithme montée des eaux
 #pour voir l'aide de la fonction : ICAwatershed?
@@ -46,8 +47,8 @@ function_build_atlas.Labels_split(studydir,nameRois,nameMaps_dir)
 function_build_atlas.create_3D_labels_file(studydir,roisDirName,name3Dlabelfile)
 
 #Crée un fichier 4D a partir des ROIs issue de Labels_split au format nii.
-function_build_atlas.concatenate_Nifti(studydir,roisDirName,'TEST4D_mafonction')
+function_build_atlas.concatenate_Nifti(studydir,roisDirName,name_file=atlas_4D_name)
 
 #Enregistre les informations basiques concernant l'atlas généré dans le dossier studydir dans un .csv
-function_build_atlas.basics_info_atlas(atlas_filedir=studydir,atlas_name=atlas4D,threshold_carte=threshold
+function_build_atlas.basics_info_atlas(atlas_filedir=studydir,atlas_name=atlas_4D_name,threshold_carte=threshold
                                        ,distance_watershed=distance,presence_cereb=cervelet,threshold_vox=threshold_vox)
