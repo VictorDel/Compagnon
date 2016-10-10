@@ -17,7 +17,6 @@ from nilearn.regions import RegionExtractor
 from nilearn.image import concat_imgs, load_img
 import csv
 
-#testmodif
 
 def mkdir_p(path):
     """
@@ -52,7 +51,7 @@ def ICAwatershed(landscape_4D,mask_file,studydir,nameMaps,noise_maps,distance=3.
    
     """
     i=0
-    out_dir = studydir+'/'+nameMaps+'_'+'thresh'+str(threshold)+'_'+'dist'+str(distance)
+    out_dir = os.path.join(studydir,nameMaps+'_'+'thresh'+str(threshold)+'_'+'dist'+str(distance))
     mkdir_p(out_dir)
     for landscape in image.iter_img(landscape_4D):
         name = 'map_'+str(i)
@@ -99,7 +98,7 @@ def ICAwatershed(landscape_4D,mask_file,studydir,nameMaps,noise_maps,distance=3.
     
     
     if cervelet == 'non':
-        Cereb = glob.glob(out_dir+'/*cereb*.nii')
+        Cereb = glob.glob(os.path.join(out_dir,'*cereb*.nii'))
         reponse = input('Effacer les rois contenant une partie de cervelet? yes or no \n')
         if reponse == 'yes':
             for cerebs in Cereb:
@@ -119,8 +118,8 @@ def Labels_split(studydir,nameRois,nameMaps_dir,threshold_vox = 200):
     - nameMaps_dir, string: nom du dossier ou sont les cartes isssue de ICAwatershed.py 
     """
     
-    label_map_dir = studydir + '/' + nameMaps_dir
-    out_dir = studydir + '/' + nameRois + '_' + nameMaps_dir + '_' + str(threshold_vox) + 'vox'
+    label_map_dir = os.path.join(studydir,nameMaps_dir)
+    out_dir = os.path.join(studydir,nameRois + '_' + nameMaps_dir + '_' + str(threshold_vox) + 'vox')
     mkdir_p(out_dir)
     #numvox_tresh = 200
     roi_num=0
