@@ -17,6 +17,8 @@ from nilearn.regions import RegionExtractor
 from nilearn.image import concat_imgs, load_img
 import csv
 
+#testmodif
+
 def mkdir_p(path):
     """
     Création d'un dossier.
