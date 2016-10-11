@@ -38,6 +38,8 @@ from nilearn import plotting
 from sklearn.svm import LinearSVC
 from sklearn.cross_validation import StratifiedKFold, cross_val_score, StratifiedShuffleSplit
 
+#test
+
 def _NPtest(m1, m2, axis, paired):
     """non parametric tests
 
