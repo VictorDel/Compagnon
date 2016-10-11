@@ -5,7 +5,7 @@ Created on Thu Nov 19 10:25:08 2015
 
 @author: vd239549
 """
-
+#Ma modif: db242421
 #Recent version of the connectivity pipe using individual atlas for every subject and performing classification using linear svc
 
 # Impot libraries
