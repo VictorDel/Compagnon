@@ -19,8 +19,10 @@ landscape_4D = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/re
 mask_file = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/masks/ext_filled_voronoi_resampled.nii'
 #Dossier d'etude ou seront stockés les différents fichiers necessaire à la création de l'atlas
 studydir = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/TEST_ATLAS'
+#Dossier ou se tyrouvent les fichiers finaux de l'atlas
+atlas_files = 'Atlas_files'
 #suffixe du dossier ou seront crées les cartes issue de ICAwatershed
-nameMaps = 'AVCnn'
+nameMaps = 'AVCnn_maps'
 #numéro des cartes non pertinentes isssue du dictionnary learning
 noise_maps = [11,15]
 #suffixe du dossier ou seront les ROIs sortie de Labels_split
@@ -30,10 +32,13 @@ nameMaps_dir = nameMaps + '_' + 'thresh' + str(threshold) + '_' + 'dist' + str(d
 #nom du dossier ou sont stockés les ROIs sortie de Labels_split
 roisDirName = nameRois + '_' + nameMaps_dir + '_' + str(threshold_vox) + 'vox'
 #nom du fichier 3D de labels
-name3Dlabelfile = 'AVCnn'
+name3Dlabelfile = 'AVCnn3D'
 #presence du cervelet dans l'atlas ?
 cervelet = 'non'
 atlas_4D_name = 'AVCnn4D'
+
+#creation du dossier ou se situeront les fichiers de l'atlas finaux
+function_build_atlas.mkdir_p(os.path.join(studydir,atlas_files)
 
 #Seuil et segmentation des cartes avec un algorithme montée des eaux
 #pour voir l'aide de la fonction : ICAwatershed?
