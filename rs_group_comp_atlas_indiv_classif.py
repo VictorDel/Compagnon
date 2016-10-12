@@ -24,7 +24,7 @@ import nilearn.decomposition
 #import random
 import scipy
 #import math
-import nilearn.connectivity
+import nilearn.connectome
 from matplotlib.backends import backend_pdf
 from copy import deepcopy
 from nilearn import image
@@ -279,10 +279,10 @@ classif = True #reform svm classification
 Paired = False #should the ttests be paired or not 
  
 atlas_name = 'atlas_indiv_func'               
-
+atlas_indiv_dir = atlas_name
 
 root='/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/'
-atlas_indiv_dir = root + 'atlas_indiv_func'
+atlas_indiv_dir = os.path.join(root,atlas_indiv_dir)
 func_type_list = [ 'controls_all','patients_all']#  #name of each group's directory for functional images
 reg_dirs = [ root +'reg',root +'reg']#name of each group's directory for regressors (regressor have to be .txt files)
 reg_suffix='.txt'
@@ -308,12 +308,12 @@ if not save_report:
 
 
 #reference files for atlas checks and target affine
-ref_dir = root+'references/'
-anat_ref_file=glob.glob(ref_dir+'*anat*.nii*')
+ref_dir = os.path.join(root,'references/')
+anat_ref_file=glob.glob(os.path.join(ref_dir,'*anat*.nii*'))
 if len(anat_ref_file)>1:
     print('Warning: several anat reference files: '+anat_ref_file[0]+' will be used')
 anat_ref = nb.load(anat_ref_file[0])
-func_ref_file=list(set(glob.glob(ref_dir+'art*.nii*')) - set(glob.glob(ref_dir+'*anat*.nii*')))
+func_ref_file=list(set(glob.glob(os.path.join(ref_dir,'art*.nii*'))) - set(glob.glob(os.path.join(ref_dir,'*anat*.nii*'))))
 if len(func_ref_file)>1:
     print('Warning: several func reference files: '+func_ref_file[0]+' will be used')
 func_ref = nb.load(func_ref_file[0])
@@ -375,7 +375,7 @@ for func_type in func_type_list :
     time_series = []
     regressors = []   
     # select all functional images files 
-    func_imgs =  glob.glob(root+func_type+'/*.nii*')
+    func_imgs =  glob.glob(os.path.join(root,func_type+'/*.nii*'))
          
     if not func_imgs:
          print('No functional files for '+func_type+' !')
@@ -394,7 +394,7 @@ for func_type in func_type_list :
         nip = nipObj.group(0)
         reg_file = glob.glob(os.path.join(reg_dirs[func_index],'*'+nip+'*'+reg_suffix))         
     
-        print f_name,reg_file        
+        print (f_name,reg_file)        
         if not reg_file:
             print('could not find matching regressor for file '+f_name+' in '+ reg_dirs[func_index])                 
 
@@ -503,7 +503,7 @@ for func_type in func_type_list:
     mean_connectivity = {}     
     for kind in kinds:
         try:
-            conn_measure = nilearn.connectivity.ConnectivityMeasure(cov_estimator =estimator, kind=kind)
+            conn_measure = nilearn.connectome.ConnectivityMeasure(cov_estimator =estimator, kind=kind)
             t_s=np.asarray(all_time_series_r[func_type])
             #np.delete(t_s,void_indices_all[func_type])                                
             subjects_connectivity[kind] = conn_measure.fit_transform(t_s)
@@ -696,7 +696,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
                         display.add_overlay(nilearn.image.index_img(visu, ntwk[i]),
                                         cmap=plotting.cm.black_red)
                                         
-                    save_tmp=os.getcwd()+'/tmp.png'
+                    save_tmp=os.path.join(os.getcwd(),'tmp.png')
                     display.savefig(save_tmp)     
                     display.close() 
                     
@@ -765,7 +765,3 @@ with backend_pdf.PdfPages(save_report) as pdf:
     #plt.figtext(mean_scores[acc],ypos[acc],score,weight='bold')
 
 #plt.show()
-
-
-
-
