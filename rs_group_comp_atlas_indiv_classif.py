@@ -277,7 +277,8 @@ stat_type = 'p' #choose parametric or non parametric ('np') test, see _NPtest an
 Log_ok = False #perform log likelihood
 classif = True #reform svm classification
 Paired = False #should the ttests be paired or not 
- 
+MatReorg = False #should correlogram be reorganized according to correlation clusters 
+    
 atlas_name = 'atlas_indiv_func'               
 atlas_indiv_dir = atlas_name
 
@@ -334,7 +335,7 @@ label_colors = np.random.rand(len(labels_ref),3)
 coords_ref  =[plotting.find_xyz_cut_coords(roi) for roi in image.iter_img(ref_atlas)] 
 rois_ref = np.asarray(labels_ref)
 n_r = len(rois_ref)
-l=360./n_r#roi label size in figures     
+l=300./n_r#roi label size in figures     
 visu_ref = ref_atlas
 
 
@@ -553,8 +554,15 @@ with backend_pdf.PdfPages(save_report) as pdf:
                 m_span = np.max(np.abs(Mean_mat))                
                 span = [-m_span,m_span]
             #reorganize matrix with hierarchical clustering
-            Mean_mat_r,rois_r,I = matReorg(Mean_mat,labels_ref)           
-            plot_matrices(Mean_mat_r,span ,rois_r,label_colors, 'Average '+func_type + ' ' + kind+ ' across subjects\nTotal average for '+kind+' = '+str(Mean_tot) ,colmap ="bwr",labelsize=l) 
+            if MatReorg :
+                Mean_mat_r,rois_r,I = matReorg(Mean_mat,labels_ref)
+            else:
+                Mean_mat_r = Mean_mat
+                rois_r = labels_ref
+                I = range(n_r)
+                    
+            new_label_colors=[label_colors[i] for i in I] 
+            plot_matrices(Mean_mat_r,span ,rois_r,new_label_colors, 'Average '+func_type + ' ' + kind+ ' across subjects\nTotal average for '+kind+' = '+str(Mean_tot) ,colmap ="bwr",labelsize=l) 
             pdf.savefig()
             plt.close()
             
@@ -630,12 +638,24 @@ with backend_pdf.PdfPages(save_report) as pdf:
             sig_effect = np.multiply(sym_mask,t2[0][:][:])
             plotting.plot_connectome(sig_effect, coords_ref,node_color=label_colors,title=  comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' +' Paired = ' + str(paired) +' '+ MC_correction+' corrected p='+ str(p))                                
             pdf.savefig()    
-            plt.close()           
-            plot_matrices(matReorg(t2_corrected,labels,I)[0],[0,p] ,rois_r,label_colors, comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' + ' Paired = ' + str(paired)+' ' + MC_correction+' corrected',colmap ="hot",labelsize=l)                                           
+            plt.close()
+            if MatReorg:
+                t2_corrected_r,labels_r,I_=matReorg(t2_corrected,labels,I)
+            else:
+                t2_corrected_r = t2_corrected
+                labels_r = labels
+                new_label_colors = label_colors
+            plot_matrices(t2_corrected_r,[0,p] ,rois_r,new_label_colors, comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' + ' Paired = ' + str(paired)+' ' + MC_correction+' corrected',colmap ="hot",labelsize=l)                                           
             
             pdf.savefig()
             plt.close()
-            plot_matrices(matReorg(t2[0][:][:],labels,I)[0],[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
+            if MatReorg:
+                t2_r,labels_r,I_=matReorg(t2_,labels,I)
+            else:
+                t2_r = t2
+                labels_r = labels
+                new_label_colors = label_colors
+            plot_matrices(t2[0][:][:],[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,new_label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
             pdf.savefig()
             plt.close()           
                        
