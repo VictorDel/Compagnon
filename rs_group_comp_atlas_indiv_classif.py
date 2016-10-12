@@ -650,7 +650,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
             pdf.savefig()
             plt.close()
             if MatReorg:
-                t2_r,labels_r,I_=matReorg(t2_,labels,I)
+                t2_r,labels_r,I_=matReorg(t2,labels,I)
             else:
                 t2_r = t2
                 labels_r = labels
