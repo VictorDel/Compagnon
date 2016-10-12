@@ -99,14 +99,10 @@ def ICAwatershed(landscape_4D,mask_file,studydir,nameMaps,noise_maps,distance=3.
     
     if cervelet == 'non':
         Cereb = glob.glob(os.path.join(out_dir,'*cereb*.nii'))
-        reponse = input('Effacer les rois contenant une partie de cervelet? yes or no \n')
-        if reponse == 'yes':
-            for cerebs in Cereb:
-                os.remove(cerebs)
-        elif reponse == 'no':
-            print('Les ROIs avec du cervelet sont conservées, il y en a',len(Cereb))
-    else:
-        print('Les ROIs avec des voxels appartenant au label du cervelet seront conservées')
+        print('Attention les ROIs avec des voxels du cervelet seront effacés !')
+    elif cervelet == 'oui':
+        Cereb = glob.glob(os.path.join(out_dir,'*cereb*.nii'))
+        print('Les ROIs avec des voxels appartenant au label du cervelet seront conservées, il y en a',len(Cereb))
 
 def Labels_split(studydir,nameRois,nameMaps_dir,threshold_vox = 200):
     """
@@ -142,18 +138,18 @@ def Labels_split(studydir,nameRois,nameMaps_dir,threshold_vox = 200):
                 nb.save(out_img,name)
                 roi_num += 1
 
-def create_3D_labels_file(studydir,roisDirName,name3Dlabelfile):
+def create_3D_labels_file(studydir,roisDirName,name3Dlabelfile,savedir_atlas):
     """
     Cette fonction crée un crée un fichier 3D de label a partir des ROIs 3D issue de Labels_Split.
     Paramètres:
     studydir, string: nom du dossier d'étude de création de l'atlas
     roisDirName, string: nom du dossier ou se trouve les Rois issue de Labels_Split
     name3Dlabelfile, string: nom du fichier 3D qui sera crée au format NifTi.
-    
+    savedir_atlas, string: nom du dossier ou seront stockés les atlas
     """
     
     roi_list=glob.glob(os.path.join(studydir,roisDirName,'roi*.nii'))
-    name=os.path.join(studydir,name3Dlabelfile+'.nii')
+    name=os.path.join(studydir,savedir_atlas,name3Dlabelfile+'.nii')
     new_dat = np.zeros(nb.load(roi_list[0]).shape)
     
     for i in range(len(roi_list)):
@@ -164,29 +160,37 @@ def create_3D_labels_file(studydir,roisDirName,name3Dlabelfile):
     
     outimage = nb.Nifti1Image(new_dat, roi_obj.affine)
     nb.save(outimage,name)
-    print('Vous avez généré un atlas de',len(roi_list),'ROIs, enregistrées dans le fichier 3D de labels',name3Dlabelfile+'.nii','dans le dossier',studydir)
+    print('Vous avez généré un atlas de',len(roi_list),'ROIs, enregistrées dans le fichier 3D de labels',name3Dlabelfile+'.nii','dans le dossier',savedir_atlas)
     
-def concatenate_Nifti(studydir,roisdirs_name,name_file):
+def concatenate_Nifti(studydir,roisdirs_name,name_file,savedir_atlas):
     """
     Cette fonction crée un fichier 4D à partir de la liste des ROIs
     Paramètres:
     studydir, string: nom du dossier d'étude de création de l'atlas
     roisdirs_Name, string: nom du dossier ou se trouve les Rois issue de Labels_Split
     name_file, string: nom du fichier 4D généré qui constituera l'atlas
+    savedir_atlas, string: nom du dossier ou seront les atlas.
     
     """
     rois_files = glob.glob(os.path.join(studydir,roisdirs_name,'roi*.nii'))
     rois_concatenate = concat_imgs(rois_files)
-    nb.save(rois_concatenate,os.path.join(studydir,name_file+'.nii'))
-    print('Le fichier 4D contenant l\'atlas se trouve dans le dossier',studydir)
+    if savedir_atlas == studydir:
+        
+        nb.save(rois_concatenate,os.path.join(studydir,name_file+'.nii'))
+        print('Le fichier 4D contenant l\'atlas se trouve dans le dossier',studydir)
+    else:
+        mkdir_p(os.path.join(studydir,savedir_atlas))
+        nb.save(rois_concatenate,os.path.join(studydir,savedir_atlas,name_file+'.nii'))
+        
+        print('Le fichier 4D contenant l\'atlas se trouve dans le dossier',savedir_atlas)
     
-def basics_info_atlas(atlas_filedir,atlas_name,threshold_carte,threshold_vox,distance_watershed,presence_cereb):
+def basics_info_atlas(studydir,atlas_filedir,atlas_name,threshold_carte,threshold_vox,distance_watershed,presence_cereb):
     """
     Cette fonction affiche et enregistre dans un .csv les informations basiques concernant la taille de l'atlas. Elle reprend les
     paramètres des fonctions précedentes.
     """
     
-    atlas4D = os.path.join(atlas_filedir,atlas_name+'.nii')
+    atlas4D = os.path.join(studydir,atlas_filedir,atlas_name+'.nii')
     
     atlas_img = load_img(atlas4D)
     atlas_img_data = atlas_img.get_data()
@@ -209,9 +213,7 @@ def basics_info_atlas(atlas_filedir,atlas_name,threshold_carte,threshold_vox,dis
                  "Distance pic à pic watershed":distance_watershed,"Prise en compte du cervelet":presence_cereb,
                  "Moyenne en voxel":moy_vox, "Région la plus petite":min_roi_vox, "Région la plus grande":max_roi_vox}
     
-    with open(atlas_filedir+'/'+atlas_name+'.csv','w+') as basic_info_csv:
+    with open(os.path.join(studydir,atlas_filedir,atlas_name+'.txt'),'w+') as basic_info_csv:
         writer = csv.writer(basic_info_csv)
         for key, value in data_dict.items():
             writer.writerow([key, value])
-
-    
