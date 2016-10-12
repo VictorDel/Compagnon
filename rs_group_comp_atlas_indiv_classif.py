@@ -24,7 +24,7 @@ import nilearn.decomposition
 #import random
 import scipy
 #import math
-import nilearn.connectivity
+import nilearn.connectome
 from matplotlib.backends import backend_pdf
 from copy import deepcopy
 from nilearn import image
@@ -180,21 +180,21 @@ def LogL(M_1,M_2):
 
 def matReorg(mat,label,indices='none'):
 
-	# Compute hierarchical clustering to reorganize matrix
-	#mat matrix to reorganize
-	#label : nom des indices de la matrice (dans l'ordre)
-	if indices == 'none' :   
-		Y = sch.linkage(mat, method='centroid')
-		Z = sch.dendrogram(Y, orientation='right')
-		indices = Z['leaves']		
-	new_mat=deepcopy(mat)
-	new_mat = new_mat[indices,:]
-	new_mat = new_mat[:,indices]
-	new_label=[label[i] for i in indices]
-	return new_mat,new_label,indices
-	
-	
-	
+    # Compute hierarchical clustering to reorganize matrix
+    #mat matrix to reorganize
+    #label : nom des indices de la matrice (dans l'ordre)
+    if indices == 'none' :   
+        Y = sch.linkage(mat, method='centroid')
+        Z = sch.dendrogram(Y, orientation='right')
+        indices = Z['leaves']        
+    new_mat=deepcopy(mat)
+    new_mat = new_mat[indices,:]
+    new_mat = new_mat[:,indices]
+    new_label=[label[i] for i in indices]
+    return new_mat,new_label,indices
+    
+    
+    
 def plot_matrices(mat,span ,labels,label_colors, title,colmap="bwr",labelsize=4 ):
     #plot matrices
     #define titles and colors
@@ -209,18 +209,17 @@ def plot_matrices(mat,span ,labels,label_colors, title,colmap="bwr",labelsize=4 
     ax.set_yticklabels(labels)
     ax.yaxis.tick_left()
     for xtick, color in zip(ax.get_xticklabels(), label_colors):
-		xtick.set_color(color)
-		xtick.set_fontsize(labelsize)
+        xtick.set_color(color)
+        xtick.set_fontsize(labelsize)
     for ytick, color in zip(ax.get_yticklabels(), label_colors):
-		ytick.set_color(color)
-		ytick.set_fontsize(labelsize)
+        ytick.set_color(color)
+        ytick.set_fontsize(labelsize)
     #plt.subplots_adjust(left=.01, bottom=.3, top=.99, right=.62)    
     cbar=fig.colorbar(cax,ticks = span)
     cbar.ax.set_yticklabels(span)
     #plt.colorbar.make_axes(location="left")         
 
        
-     
 def symetrize(M,tri = 'upper', diag = 1):
     #symetrize M according to 'upper' or 'lower' triangle and set diag to diag
     M_sym=deepcopy(M)             
@@ -278,12 +277,13 @@ stat_type = 'p' #choose parametric or non parametric ('np') test, see _NPtest an
 Log_ok = False #perform log likelihood
 classif = True #reform svm classification
 Paired = False #should the ttests be paired or not 
- 
+MatReorg = False #should correlogram be reorganized according to correlation clusters 
+    
 atlas_name = 'atlas_indiv_func'               
-
+atlas_indiv_dir = atlas_name
 
 root='/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/'
-atlas_indiv_dir = root + 'atlas_indiv_func'
+atlas_indiv_dir = os.path.join(root,atlas_indiv_dir)
 func_type_list = [ 'controls_all','patients_all']#  #name of each group's directory for functional images
 reg_dirs = [ root +'reg',root +'reg']#name of each group's directory for regressors (regressor have to be .txt files)
 reg_suffix='.txt'
@@ -309,12 +309,12 @@ if not save_report:
 
 
 #reference files for atlas checks and target affine
-ref_dir = root+'references/'
-anat_ref_file=glob.glob(ref_dir+'*anat*.nii*')
+ref_dir = os.path.join(root,'references/')
+anat_ref_file=glob.glob(os.path.join(ref_dir,'*anat*.nii*'))
 if len(anat_ref_file)>1:
     print('Warning: several anat reference files: '+anat_ref_file[0]+' will be used')
 anat_ref = nb.load(anat_ref_file[0])
-func_ref_file=list(set(glob.glob(ref_dir+'art*.nii*')) - set(glob.glob(ref_dir+'*anat*.nii*')))
+func_ref_file=list(set(glob.glob(os.path.join(ref_dir,'art*.nii*'))) - set(glob.glob(os.path.join(ref_dir,'*anat*.nii*'))))
 if len(func_ref_file)>1:
     print('Warning: several func reference files: '+func_ref_file[0]+' will be used')
 func_ref = nb.load(func_ref_file[0])
@@ -335,7 +335,7 @@ label_colors = np.random.rand(len(labels_ref),3)
 coords_ref  =[plotting.find_xyz_cut_coords(roi) for roi in image.iter_img(ref_atlas)] 
 rois_ref = np.asarray(labels_ref)
 n_r = len(rois_ref)
-l=360./n_r#roi label size in figures     
+l=300./n_r#roi label size in figures     
 visu_ref = ref_atlas
 
 
@@ -376,7 +376,7 @@ for func_type in func_type_list :
     time_series = []
     regressors = []   
     # select all functional images files 
-    func_imgs =  glob.glob(root+func_type+'/*.nii*')
+    func_imgs =  glob.glob(os.path.join(root,func_type+'/*.nii*'))
          
     if not func_imgs:
          print('No functional files for '+func_type+' !')
@@ -389,70 +389,70 @@ for func_type in func_type_list :
     non_void_indices=[]
     # select matching regressor files
     for f_name in func_imgs:            
-		f=func_imgs.index(f_name)
-		#nipObj =  re.search(r'sub\d{2}_..\d{6}',f_name)
-		nipObj =  re.search(r'..\d{6}',f_name)
-		nip = nipObj.group(0)
-		reg_file = glob.glob(os.path.join(reg_dirs[func_index],'*'+nip+'*'+reg_suffix))         
-	
-		print f_name,reg_file        
-		if not reg_file:
-			print('could not find matching regressor for file '+f_name+' in '+ reg_dirs[func_index])                 
+        f=func_imgs.index(f_name)
+        #nipObj =  re.search(r'sub\d{2}_..\d{6}',f_name)
+        nipObj =  re.search(r'..\d{6}',f_name)
+        nip = nipObj.group(0)
+        reg_file = glob.glob(os.path.join(reg_dirs[func_index],'*'+nip+'*'+reg_suffix))         
+    
+        print (f_name,reg_file)        
+        if not reg_file:
+            print('could not find matching regressor for file '+f_name+' in '+ reg_dirs[func_index])                 
 
-		#select matching atlas file
-		atlas_filename = glob.glob(os.path.join(atlas_dirs[func_index],'*'+nip+'*'+atlas_suffix))[0]
-		#atlas_filename = glob.glob(atlas_dirs[func_index]+'/'+atlas_prefix+'*'+f_name[len(atlas_indiv_dir)+common_+1:len(f_name)-7] + '*.nii*')[0]
-		#labels = open(glob.glob(atlas_dirs[func_index]+'/'+atlas_prefix+'*'+f_name[len(atlas_indiv_dir)+common_+1:len(f_name)-7] + '*'+label_suffix)[0]).read().split()    
-		labels = open(glob.glob(os.path.join(atlas_dirs[func_index],'*'+nip+'*'+label_suffix))[0]).read().split() 
-		coords =[plotting.find_xyz_cut_coords(roi) for roi in image.iter_img(atlas_filename)] 
-		#rois = labels['name'].T
-		rois = np.asarray(labels)
+        #select matching atlas file
+        atlas_filename = glob.glob(os.path.join(atlas_dirs[func_index],'*'+nip+'*'+atlas_suffix))[0]
+        #atlas_filename = glob.glob(atlas_dirs[func_index]+'/'+atlas_prefix+'*'+f_name[len(atlas_indiv_dir)+common_+1:len(f_name)-7] + '*.nii*')[0]
+        #labels = open(glob.glob(atlas_dirs[func_index]+'/'+atlas_prefix+'*'+f_name[len(atlas_indiv_dir)+common_+1:len(f_name)-7] + '*'+label_suffix)[0]).read().split()    
+        labels = open(glob.glob(os.path.join(atlas_dirs[func_index],'*'+nip+'*'+label_suffix))[0]).read().split() 
+        coords =[plotting.find_xyz_cut_coords(roi) for roi in image.iter_img(atlas_filename)] 
+        #rois = labels['name'].T
+        rois = np.asarray(labels)
      
-		visu = atlas_filename
-		
-		non_void_indices.append(np.where(rois != 'void')[0])
+        visu = atlas_filename
+        
+        non_void_indices.append(np.where(rois != 'void')[0])
 
-		print('void roi: '+str(np.where(rois == 'void')[0]))
+        print('void roi: '+str(np.where(rois == 'void')[0]))
 
-		all_ntwks = range(n_r)          
-		networks = {'All ROIs':all_ntwks}
-
-
-
-		if f == random_sub:
-				display_atlas= nilearn.plotting.plot_prob_atlas(atlas_filename,anat_img=nilearn.image.index_img(
-													func_imgs[f], 0),title=atlas_name+
-													'_'+func_type,cut_coords = (0,0,0),
-													threshold=0.)        
-				at_check.append(plt.gcf())
-				plt.close()
+        all_ntwks = range(n_r)          
+        networks = {'All ROIs':all_ntwks}
 
 
 
+        if f == random_sub:
+                display_atlas= nilearn.plotting.plot_prob_atlas(atlas_filename,anat_img=nilearn.image.index_img(
+                                                    func_imgs[f], 0),title=atlas_name+
+                                                    '_'+func_type,cut_coords = (0,0,0),
+                                                    threshold=0.)        
+                at_check.append(plt.gcf())
+                plt.close()
 
-		#masker for raw (stdz and detrended) time series                              
-		masker_r = NiftiMapsMasker(atlas_filename, mask_img=mask, smoothing_fwhm=None,
-								 standardize=stdz,detrend=detr, low_pass=None, 
-								 high_pass=None,t_r=TR, resampling_target='data',
-								 memory=mem_dir,memory_level=5, verbose=0) 
 
 
-		# extracting time series according to atlas    
-		if func_imgs[f]:                        
-									
-			time_series.append( masker_r.fit_transform(func_imgs[f]))
-			if reg_file:            
-				time_serie_r = masker_r.fit_transform(func_imgs[f], confounds=reg_file)                                
-				
-				regressors.append(np.loadtxt(reg_file[0]))                
-			else:
-				time_serie_r=masker_r.fit_transform(func_imgs[f])
-				print('no confounds removed')
-				
-			time_series_r.append(time_serie_r)    
-			progress = np.round(100*( (float(f)+1.)/len(func_imgs)))            
-			print(str(progress) + '% done in computing time series for '+func_type)
-		
+
+        #masker for raw (stdz and detrended) time series                              
+        masker_r = NiftiMapsMasker(atlas_filename, mask_img=mask, smoothing_fwhm=None,
+                                 standardize=stdz,detrend=detr, low_pass=None, 
+                                 high_pass=None,t_r=TR, resampling_target='data',
+                                 memory=mem_dir,memory_level=5, verbose=0) 
+
+
+        # extracting time series according to atlas    
+        if func_imgs[f]:                        
+                                    
+            time_series.append( masker_r.fit_transform(func_imgs[f]))
+            if reg_file:            
+                time_serie_r = masker_r.fit_transform(func_imgs[f], confounds=reg_file)                                
+                
+                regressors.append(np.loadtxt(reg_file[0]))                
+            else:
+                time_serie_r=masker_r.fit_transform(func_imgs[f])
+                print('no confounds removed')
+                
+            time_series_r.append(time_serie_r)    
+            progress = np.round(100*( (float(f)+1.)/len(func_imgs)))            
+            print(str(progress) + '% done in computing time series for '+func_type)
+        
     
     
             
@@ -473,24 +473,24 @@ for func_type in func_type_list :
     np.save(r_file[func_type],np.asarray(all_regressors))
     
     
-	# build list of roi couples to consider in connectivity measures
+    # build list of roi couples to consider in connectivity measures
     non_void_list=[[[]*n_r]*n_r]*n_r
     l_unravelled=[]
     for i in range(n_r):
         for j in range(n_r):
-            l_tmp=[]		
+            l_tmp=[]        
             for s in range(len(non_void_indices_all[func_type])):
-                if i in non_void_indices_all[func_type][s] and j in non_void_indices_all[func_type][s]:										
-					l_tmp.append(s)	
+                if i in non_void_indices_all[func_type][s] and j in non_void_indices_all[func_type][s]:                                        
+                    l_tmp.append(s)    
             
             l_unravelled.append(l_tmp)
-			
+            
     if len(np.shape(l_unravelled))>1:
-		non_void_list = np.reshape(l_unravelled,(n_r,n_r,np.shape(l_unravelled)[-1]))
+        non_void_list = np.reshape(l_unravelled,(n_r,n_r,np.shape(l_unravelled)[-1]))
     else:
-		non_void_list = np.reshape(l_unravelled,(n_r,n_r))
-					
-    non_void_list_all[func_type] = 	non_void_list	
+        non_void_list = np.reshape(l_unravelled,(n_r,n_r))
+                    
+    non_void_list_all[func_type] =     non_void_list    
     non_void_file[func_type] = save_dir+'/'+func_type+'_'+atlas_name+'_non_void.npy'
     np.save(non_void_file[func_type],np.asarray(non_void_list_all[func_type]))
 
@@ -504,7 +504,7 @@ for func_type in func_type_list:
     mean_connectivity = {}     
     for kind in kinds:
         try:
-            conn_measure = nilearn.connectivity.ConnectivityMeasure(cov_estimator =estimator, kind=kind)
+            conn_measure = nilearn.connectome.ConnectivityMeasure(cov_estimator =estimator, kind=kind)
             t_s=np.asarray(all_time_series_r[func_type])
             #np.delete(t_s,void_indices_all[func_type])                                
             subjects_connectivity[kind] = conn_measure.fit_transform(t_s)
@@ -531,8 +531,6 @@ for func_type in func_type_list:
     individual_connectivity_matrices[func_type] = subjects_connectivity
     mean_connectivity_matrix[func_type] = mean_connectivity
     
-   
-
 comp_list=partperm(func_type_list)
    
 with backend_pdf.PdfPages(save_report) as pdf:
@@ -556,8 +554,15 @@ with backend_pdf.PdfPages(save_report) as pdf:
                 m_span = np.max(np.abs(Mean_mat))                
                 span = [-m_span,m_span]
             #reorganize matrix with hierarchical clustering
-            Mean_mat_r,rois_r,I = matReorg(Mean_mat,labels_ref)           
-            plot_matrices(Mean_mat_r,span ,rois_r,label_colors, 'Average '+func_type + ' ' + kind+ ' across subjects\nTotal average for '+kind+' = '+str(Mean_tot) ,colmap ="bwr",labelsize=l) 
+            if MatReorg :
+                Mean_mat_r,rois_r,I = matReorg(Mean_mat,labels_ref)
+            else:
+                Mean_mat_r = Mean_mat
+                rois_r = labels_ref
+                I = range(n_r)
+                    
+            new_label_colors=[label_colors[i] for i in I] 
+            plot_matrices(Mean_mat_r,span ,rois_r,new_label_colors, 'Average '+func_type + ' ' + kind+ ' across subjects\nTotal average for '+kind+' = '+str(Mean_tot) ,colmap ="bwr",labelsize=l) 
             pdf.savefig()
             plt.close()
             
@@ -585,41 +590,41 @@ with backend_pdf.PdfPages(save_report) as pdf:
             t2 = np.zeros([2,n_r,n_r])
             if stat_type =='np':
 
-				for i in range(n_r):
-					for j in range(n_r):
-						testies_1 = np.asarray([g1[k] [i][j] for k in non_void_list_all[comp[0]][i][j]])
-						testies_2 = np.asarray([g2[k] [i][j] for k in non_void_list_all[comp[1]][i][j]])
-						# check if paired ttest is possible
-						if len(non_void_list_all[comp[0]][i][j])!= len(non_void_list_all[comp[1]][i][j]) and Paired==True:
-							print ('Warning: number of subjects different between ' + comp[0] + ' and ' +  comp[1] + ' for '+ kind)
-							print('Ttest cant be paired')
-							paired = False
-						t2[0][i][j]=_NPtest(testies_1, testies_2, axis = 0, paired = paired)[0]
-						t2[1][i][j]=_NPtest(testies_1, testies_2, axis = 0, paired = paired)[1]
-				
+                for i in range(n_r):
+                    for j in range(n_r):
+                        testies_1 = np.asarray([g1[k] [i][j] for k in non_void_list_all[comp[0]][i][j]])
+                        testies_2 = np.asarray([g2[k] [i][j] for k in non_void_list_all[comp[1]][i][j]])
+                        # check if paired ttest is possible
+                        if len(non_void_list_all[comp[0]][i][j])!= len(non_void_list_all[comp[1]][i][j]) and Paired==True:
+                            print ('Warning: number of subjects different between ' + comp[0] + ' and ' +  comp[1] + ' for '+ kind)
+                            print('Ttest cant be paired')
+                            paired = False
+                        t2[0][i][j]=_NPtest(testies_1, testies_2, axis = 0, paired = paired)[0]
+                        t2[1][i][j]=_NPtest(testies_1, testies_2, axis = 0, paired = paired)[1]
+                
                 #t2 = _NPtest(g1_, g2_, axis = 0, paired = paired)
             else:
-				for i in range(n_r):
-					for j in range(n_r):
-						testies_1 = np.asarray([g1[k] [i][j] for k in non_void_list_all[comp[0]][i][j]])
-						testies_2 = np.asarray([g2[k] [i][j] for k in non_void_list_all[comp[1]][i][j]])
-						# check if paired ttest is possible
-						if len(non_void_list_all[comp[0]][i][j])!= len(non_void_list_all[comp[1]][i][j]) and Paired==True:
-							print ('Warning: number of subjects different between ' + comp[0] + ' and ' +  comp[1] + ' for '+ kind)
-							print('Ttest cant be paired')
-							paired = False
-							
-						t2[0][i][j]=_ttest2(testies_1, testies_2, axis = 0, paired = paired)[0]				
-						t2[1][i][j]=_ttest2(testies_1, testies_2, axis = 0, paired = paired)[1]
-				
+                for i in range(n_r):
+                    for j in range(n_r):
+                        testies_1 = np.asarray([g1[k] [i][j] for k in non_void_list_all[comp[0]][i][j]])
+                        testies_2 = np.asarray([g2[k] [i][j] for k in non_void_list_all[comp[1]][i][j]])
+                        # check if paired ttest is possible
+                        if len(non_void_list_all[comp[0]][i][j])!= len(non_void_list_all[comp[1]][i][j]) and Paired==True:
+                            print ('Warning: number of subjects different between ' + comp[0] + ' and ' +  comp[1] + ' for '+ kind)
+                            print('Ttest cant be paired')
+                            paired = False
+                            
+                        t2[0][i][j]=_ttest2(testies_1, testies_2, axis = 0, paired = paired)[0]                
+                        t2[1][i][j]=_ttest2(testies_1, testies_2, axis = 0, paired = paired)[1]
+                
                 #t2 = _ttest2(g1, g2, axis = 0, paired = paired)
             if MC_correction == 'FDR':            
                 fdr_correction = fdr(t2[1][:][:])
                 fdr_correction[np.isnan(fdr_correction)] =1.            
                 t2_corrected = sym_fdr(fdr_correction) #fdr multiple comparison correction                                            
             elif MC_correction == 'Bonferoni':
-               b_factor = (n_r*n_r)/2. #bonferoni correction factor = number of pairs of regions
-               t2_corrected = t2[1][:][:]*b_factor 
+                b_factor = (n_r*n_r)/2. #bonferoni correction factor = number of pairs of regions
+                t2_corrected = t2[1][:][:]*b_factor 
             else :
                 t2_corrected = t2[1][:][:]
                 
@@ -633,12 +638,24 @@ with backend_pdf.PdfPages(save_report) as pdf:
             sig_effect = np.multiply(sym_mask,t2[0][:][:])
             plotting.plot_connectome(sig_effect, coords_ref,node_color=label_colors,title=  comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' +' Paired = ' + str(paired) +' '+ MC_correction+' corrected p='+ str(p))                                
             pdf.savefig()    
-            plt.close()           
-            plot_matrices(matReorg(t2_corrected,labels,I)[0],[0,p] ,rois_r,label_colors, comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' + ' Paired = ' + str(paired)+' ' + MC_correction+' corrected',colmap ="hot",labelsize=l)                                           
+            plt.close()
+            if MatReorg:
+                t2_corrected_r,labels_r,I_=matReorg(t2_corrected,labels,I)
+            else:
+                t2_corrected_r = t2_corrected
+                labels_r = labels
+                new_label_colors = label_colors
+            plot_matrices(t2_corrected_r,[0,p] ,rois_r,new_label_colors, comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' + ' Paired = ' + str(paired)+' ' + MC_correction+' corrected',colmap ="hot",labelsize=l)                                           
             
             pdf.savefig()
             plt.close()
-            plot_matrices(matReorg(t2[0][:][:],labels,I)[0],[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
+            if MatReorg:
+                t2_r,labels_r,I_=matReorg(t2,labels,I)
+            else:
+                t2_r = t2
+                labels_r = labels
+                new_label_colors = label_colors
+            plot_matrices(t2[0][:][:],[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,new_label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
             pdf.savefig()
             plt.close()           
                        
@@ -699,7 +716,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
                         display.add_overlay(nilearn.image.index_img(visu, ntwk[i]),
                                         cmap=plotting.cm.black_red)
                                         
-                    save_tmp=os.getcwd()+'/tmp.png'
+                    save_tmp=os.path.join(os.getcwd(),'tmp.png')
                     display.savefig(save_tmp)     
                     display.close() 
                     
@@ -726,7 +743,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
                     os.remove(save_tmp)
         save_p.close()            
 
-	
+    
     if classif == True:
         ## Use the connectivity coefficients to classify different groups
         classes = func_type_list
@@ -738,20 +755,20 @@ with backend_pdf.PdfPages(save_report) as pdf:
             block1 = np.hstack((np.zeros(len(individual_connectivity_matrices[comp[0]][kind_comp])),np.ones(len(individual_connectivity_matrices[comp[1]][kind_comp])))) 
             cv = StratifiedShuffleSplit(block1, n_iter=1000)
             svc = LinearSVC()
-			#Transform the connectivity matrices to 1D arrays
+            #Transform the connectivity matrices to 1D arrays
             conectivity_coefs = nilearn.connectivity.sym_to_vec(np.concatenate((individual_connectivity_matrices[comp[0]][kind_comp],
-                                                                individual_connectivity_matrices[comp[1]][kind_comp]),axis=0))			  
+                                                                individual_connectivity_matrices[comp[1]][kind_comp]),axis=0))              
             cv_scores = cross_val_score(svc, conectivity_coefs,block1, cv=cv, scoring='accuracy')
             mean_scores.append(cv_scores.mean())
             save_classif.write('using '+kind_comp + ',' + comp[0]+' VS '+comp[1]+ ':%20s score: %1.2f +- %1.2f' % (kind, cv_scores.mean(),cv_scores.std()))
             save_classif.write('\n')
             
         save_classif.close()
-	
-		
-		
+    
+        
+        
 
-		
+        
 ### Display the classification scores
 
 #plt.figure()
@@ -764,11 +781,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
 #plt.grid(True)
 #plt.title( 'pairwise classifications')
 #for acc in range(len(mean_scores)):
-	#score = str(np.round(mean_scores[acc],2))
-	#plt.figtext(mean_scores[acc],ypos[acc],score,weight='bold')
+    #score = str(np.round(mean_scores[acc],2))
+    #plt.figtext(mean_scores[acc],ypos[acc],score,weight='bold')
 
 #plt.show()
-
-
-
-
