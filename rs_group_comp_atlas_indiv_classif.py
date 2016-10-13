@@ -306,7 +306,7 @@ except:
     pass
 save_report=os.path.join(save_dir, main_title+'_'+atlas_name+'_LedoitWolf.pdf')
 if not save_report:
-    save_report=save_dir+ main_title+'_'+atlas_name+'_defaults.pdf'
+    save_report = os.path.join(save_dir, main_title+'_'+atlas_name+'_defaults.pdf')
 
 
 #reference files for atlas checks and target affine
