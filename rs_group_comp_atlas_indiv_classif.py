@@ -38,7 +38,6 @@ from nilearn import plotting
 from sklearn.svm import LinearSVC
 from sklearn.cross_validation import StratifiedKFold, cross_val_score, StratifiedShuffleSplit
 
-#testwindows Coucou Dhaïf!
 
 def _NPtest(m1, m2, axis, paired):
     """non parametric tests
@@ -252,7 +251,8 @@ def scaling_PSC(time_serie,time_dim):
 #    #generate
 
 #memory cache
-mem_dir = '/media/vd239549/LaCie/victor/nilearn_cache'
+mem_dir = r'C:\Users\Victor\Desktop\cache'
+#/media/vd239549/LaCie/victor/nilearn_cache
 
 # Numeric parameters for initial signal processing
 TR = 2.4 #volume acquisition time
@@ -282,7 +282,8 @@ MatReorg = False #should correlogram be reorganized according to correlation clu
 atlas_name = 'atlas_indiv_func'               
 atlas_indiv_dir = atlas_name
 
-root='/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/'
+root=r'C:\Users\Victor\Desktop\NS\AVCnn\data_test'
+#/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/
 atlas_indiv_dir = os.path.join(root,atlas_indiv_dir)
 func_type_list = [ 'controls_all','patients_all']#  #name of each group's directory for functional images
 reg_dirs = [ root +'reg',root +'reg']#name of each group's directory for regressors (regressor have to be .txt files)
@@ -319,14 +320,16 @@ if len(func_ref_file)>1:
     print('Warning: several func reference files: '+func_ref_file[0]+' will be used')
 func_ref = nb.load(func_ref_file[0])
 #func_template = nibabel.load
-ref_atlas = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn.nii' #
+ref_atlas = r'C:\Users\Victor\Desktop\NS\AVCnn\data_test\references\sub02_ref_atlas.nii' #
 #'/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/references/msdl_rois.nii'
+#/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn.nii
 
 display_atlas= nilearn.plotting.plot_prob_atlas(ref_atlas, anat_img=anat_ref_file[0],
                                                 title=atlas_name+'_anat',
                                                 cut_coords = (5,0,0),threshold=0.)
 
-atlas_ref_labels = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn_roi_labels.csv'
+atlas_ref_labels = r'C:\Users\Victor\Desktop\NS\AVCnn\data_test\references\sub02_ref_atlas_labels.csv'
+#'/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn_roi_labels.csv'
 #'/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/references/msdl_rois_labels.csv'
 #atlas_ref_labels = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/references/labels_short.csv'
 #labels_ref = np.recfromcsv(atlas_ref_labels)    
