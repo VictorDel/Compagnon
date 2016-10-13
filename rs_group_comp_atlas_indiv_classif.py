@@ -246,6 +246,15 @@ def scaling_PSC(time_serie,time_dim):
     T=100*time_serie/np.mean(time_serie,axis=time_dim)
     return T
 
+########TOTEST
+def siglines(mat,sig,colors,style = 'solid'):
+    mat=np.asarray(mat)
+    ind_mat=np.asarray(np.where((mat<=sig) &(mat>0.)).T
+    for c in ind_mat:  
+        if c[1]>=c[0]:
+            plt.plot([0,c[1]],[c[0],c[0]],linestyle =style,color = colors[c[0]])
+            plt.plot([c[1],c[1]],[c[0],c[1]],linestyle =style,color = colors[c[1]]))
+########
 
 #def leave_net_out(net,num_out):
 #    #generate
@@ -648,7 +657,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
                 t2_corrected_r = t2_corrected
                 labels_r = labels
                 new_label_colors = label_colors
-            plot_matrices(t2_corrected_r,[0,p] ,rois_r,new_label_colors, comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' + ' Paired = ' + str(paired)+' ' + MC_correction+' corrected',colmap ="hot",labelsize=l)                                           
+            plot_matrices(t2_corrected_r,[0,2*p] ,rois_r,new_label_colors, comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' + ' Paired = ' + str(paired)+' ' + MC_correction+' corrected',colmap ="hot",labelsize=l)                                           
             
             pdf.savefig()
             plt.close()
@@ -660,7 +669,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
                 t2_r = t2
                 labels_r = labels
                 new_label_colors = label_colors
-            plot_matrices(t2_r,[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,new_label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
+            plot_matrices(t2_r[0],[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,new_label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
             pdf.savefig()
             plt.close()            
                        
