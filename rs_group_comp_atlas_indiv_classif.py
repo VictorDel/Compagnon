@@ -650,14 +650,16 @@ with backend_pdf.PdfPages(save_report) as pdf:
             pdf.savefig()
             plt.close()
             if MatReorg:
-                t2_r,labels_r,I_=matReorg(t2,labels,I)
+                t2_r = matReorg(t2[0][:][:],labels,I)[0]
+                labels_r = matReorg(t2[0][:][:],labels,I)[1]
+                
             else:
                 t2_r = t2
                 labels_r = labels
                 new_label_colors = label_colors
-            plot_matrices(t2[0][:][:],[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,new_label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
+            plot_matrices(t2_r,[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,new_label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
             pdf.savefig()
-            plt.close()           
+            plt.close()            
                        
     if Log_ok == True and len(individual_connectivity_matrices[comp[0]][kind])!= len(individual_connectivity_matrices [comp[1]] [kind]):
         log_vectors = {}
