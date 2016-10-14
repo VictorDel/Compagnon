@@ -247,6 +247,15 @@ def scaling_PSC(time_serie,time_dim):
     return T
 
 
+def siglines(mat,sig,colors,style = 'solid'):
+    mat=np.asarray(mat)
+    ind_mat=np.asarray(np.where((mat<=sig) &(mat>0.))).T
+    for c in ind_mat:  
+        if c[0]>=c[1]:
+            plt.plot([0,c[1]],[c[0],c[0]],linestyle =style,color = colors[c[0]])
+            plt.plot([c[1],c[1]],[c[0],len(mat)],linestyle =style,color = colors[c[1]])
+
+
 #def leave_net_out(net,num_out):
 #    #generate
 
@@ -306,7 +315,7 @@ except:
     pass
 save_report=os.path.join(save_dir, main_title+'_'+atlas_name+'_LedoitWolf.pdf')
 if not save_report:
-    save_report=save_dir+ main_title+'_'+atlas_name+'_defaults.pdf'
+    save_report = os.path.join(save_dir, main_title+'_'+atlas_name+'_defaults.pdf')
 
 
 #reference files for atlas checks and target affine
@@ -639,17 +648,19 @@ with backend_pdf.PdfPages(save_report) as pdf:
             sym_mask = deepcopy(sym) 
             sym_mask[np.nonzero(sym)] = 1.
             sig_effect = np.multiply(sym_mask,t2[0][:][:])
+            sig_value =  np.multiply(sym_mask,t2_corrected)
+            sig_value[sig_value==0.]=1.
             plotting.plot_connectome(sig_effect, coords_ref,node_color=label_colors,title=  comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' +' Paired = ' + str(paired) +' '+ MC_correction+' corrected p='+ str(p))                                
             pdf.savefig()    
             plt.close()
             if MatReorg:
-                t2_corrected_r,labels_r,I_=matReorg(t2_corrected,labels,I)
+                sig_value_r,labels_r,I_=matReorg(sig_value,labels,I)
             else:
-                t2_corrected_r = t2_corrected
+                sig_value_r = sig_value
                 labels_r = labels
                 new_label_colors = label_colors
-            plot_matrices(t2_corrected_r,[0,p] ,rois_r,new_label_colors, comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' + ' Paired = ' + str(paired)+' ' + MC_correction+' corrected',colmap ="hot",labelsize=l)                                           
-            
+            plot_matrices(sig_value_r,[0,2*p] ,rois_r,new_label_colors, comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' + ' Paired = ' + str(paired)+' ' + MC_correction+' corrected',colmap ="hot",labelsize=l)                                           
+            siglines(sig_value_r,p,new_label_colors,style = 'solid')
             pdf.savefig()
             plt.close()
             if MatReorg:
@@ -660,7 +671,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
                 t2_r = t2
                 labels_r = labels
                 new_label_colors = label_colors
-            plot_matrices(t2_r,[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,new_label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
+            plot_matrices(t2_r[0],[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,new_label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
             pdf.savefig()
             plt.close()            
                        
