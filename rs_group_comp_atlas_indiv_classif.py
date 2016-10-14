@@ -412,16 +412,11 @@ for func_type in func_type_list :
             print('could not find matching regressor for file '+f_name+' in '+ reg_dirs[func_index])                 
 
         #select matching atlas file
-        atlas_filename = glob.glob(os.path.join(atlas_dirs[func_index],'*'+nip+'*'+atlas_suffix))[0]
-        #atlas_filename = glob.glob(atlas_dirs[func_index]+'/'+atlas_prefix+'*'+f_name[len(atlas_indiv_dir)+common_+1:len(f_name)-7] + '*.nii*')[0]
-        #labels = open(glob.glob(atlas_dirs[func_index]+'/'+atlas_prefix+'*'+f_name[len(atlas_indiv_dir)+common_+1:len(f_name)-7] + '*'+label_suffix)[0]).read().split()    
+        atlas_filename = glob.glob(os.path.join(atlas_dirs[func_index],'*'+nip+'*'+atlas_suffix))[0]   
         labels = open(glob.glob(os.path.join(atlas_dirs[func_index],'*'+nip+'*'+label_suffix))[0]).read().split() 
         coords =[plotting.find_xyz_cut_coords(roi) for roi in image.iter_img(atlas_filename)] 
-        #rois = labels['name'].T
-        rois = np.asarray(labels)
-     
-        visu = atlas_filename
-        
+        rois = np.asarray(labels)     
+        visu = atlas_filename        
         non_void_indices.append(np.where(rois != 'void')[0])
 
         print('void roi: '+str(np.where(rois == 'void')[0]))
@@ -434,7 +429,7 @@ for func_type in func_type_list :
         if f == random_sub:
                 display_atlas= nilearn.plotting.plot_prob_atlas(atlas_filename,anat_img=nilearn.image.index_img(
                                                     func_imgs[f], 0),title=atlas_name+
-                                                    '_'+func_type,cut_coords = (0,0,0),
+                                                    '_'+func_type,cut_coords = (5,0,0),
                                                     threshold=0.)        
                 at_check.append(plt.gcf())
                 plt.close()
@@ -521,8 +516,9 @@ for func_type in func_type_list:
             #np.delete(t_s,void_indices_all[func_type])                                
             subjects_connectivity[kind] = conn_measure.fit_transform(t_s)
             
-            if kind == 'robust dispersion':
-                mean_connectivity[kind] = conn_measure.robust_mean_
+            if kind == 'tangent':
+                mean_connectivity[kind] = conn_measure.mean_
+                ###look into how the mean is computed for tangent space to account for missing regions
             else:
                 moy = np.zeros([n_r,n_r])
                 for i in range(n_r):
@@ -530,8 +526,7 @@ for func_type in func_type_list:
                         nvi = [subjects_connectivity[kind][k] [i][j] for k in non_void_list_all[func_type][i][j]]
                         moy[i][j]=np.mean(nvi,axis=0)
                 mean_connectivity[kind] = moy
-                #mean_connectivity[kind] = \
-                    #subjects_connectivity[kind].mean(axis=0)
+
         except:
             print('estimation failed for '+ kind + ' in group ' + func_type)            
             pass
@@ -614,7 +609,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
                         t2[0][i][j]=_NPtest(testies_1, testies_2, axis = 0, paired = paired)[0]
                         t2[1][i][j]=_NPtest(testies_1, testies_2, axis = 0, paired = paired)[1]
                 
-                #t2 = _NPtest(g1_, g2_, axis = 0, paired = paired)
+                
             else:
                 for i in range(n_r):
                     for j in range(n_r):
@@ -698,11 +693,11 @@ with backend_pdf.PdfPages(save_report) as pdf:
                             name = c[0] + '->' + c[1]
                             
                             log_vector = []        
-                            for s in range(min(len(individual_connectivity_matrices[c[0]]['correlation']),len(individual_connectivity_matrices[c[1]]['correlation']))) :    
-                                Md = deepcopy(individual_connectivity_matrices[c[0]]['correlation'][s]) #correlation matrix of subject [sub_list[n] for first group of first comparison in c 
+                            for s in range(min(len(individual_connectivity_matrices[c[0]][kind_comp]),len(individual_connectivity_matrices[c[1]][kind_comp]))) :    
+                                Md = deepcopy(individual_connectivity_matrices[c[0]][kind_comp][s]) #correlation matrix of subject [sub_list[n] for first group of first comparison in c 
                                 Md=np.delete(Md,ntwk_out,axis = 0)
                                 Md=np.delete(Md,ntwk_out,axis = 1)            
-                                Mm = deepcopy(individual_connectivity_matrices[c[1]]['correlation'][s]) #correlation matrix of subject [sub_list[n] for second group of first comparison in c         
+                                Mm = deepcopy(individual_connectivity_matrices[c[1]][kind_comp][s]) #correlation matrix of subject [sub_list[n] for second group of first comparison in c         
                                 Mm=np.delete(Mm,ntwk_out,axis = 0)
                                 Mm=np.delete(Mm,ntwk_out,axis = 1)         
                                 LL = LogL(np.asarray(Md),np.asarray(Mm))
@@ -764,7 +759,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
         ## Use the connectivity coefficients to classify different groups
         classes = func_type_list
         mean_scores = []
-        save_classif=open(os.path.join(save_dir,main_title+'_classif.txt','w')) #txt report of classification scores
+        save_classif=open(os.path.join(save_dir,main_title+'_classif.txt'),'w') #txt report of classification scores
         save_classif.write('Classification accuracy scores\n\n')
         for comp in comps:    
             individual_connectivity_matrices_all=np.vstack((individual_connectivity_matrices[comp[0]][kind_comp],individual_connectivity_matrices[comp[1]][kind_comp]))
@@ -772,7 +767,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
             cv = StratifiedShuffleSplit(block1, n_iter=1000)
             svc = LinearSVC()
             #Transform the connectivity matrices to 1D arrays
-            conectivity_coefs = nilearn.connectivity.sym_to_vec(np.concatenate((individual_connectivity_matrices[comp[0]][kind_comp],
+            conectivity_coefs = nilearn.connectome.sym_to_vec(np.concatenate((individual_connectivity_matrices[comp[0]][kind_comp],
                                                                 individual_connectivity_matrices[comp[1]][kind_comp]),axis=0))              
             cv_scores = cross_val_score(svc, conectivity_coefs,block1, cv=cv, scoring='accuracy')
             mean_scores.append(cv_scores.mean())
@@ -780,24 +775,23 @@ with backend_pdf.PdfPages(save_report) as pdf:
             save_classif.write('\n')
             
         save_classif.close()
+        
+        ### Display the classification scores
+        plt.figure()
+        ypos = np.arange(len(comps)) * .1 + .1
+
+        plt.barh(ypos, mean_scores, align='center', height=.05)
+        yticks = [comp[0] + '\nVS\n '+comp[1] +'\n' for comp in comps]
+        plt.yticks(ypos, yticks)
+        plt.xlabel('Classification accuracy')
+        plt.grid(True)
+        plt.title( 'pairwise classifications')
+        for acc in range(len(mean_scores)):
+            score = str(np.round(mean_scores[acc],2))
+            plt.figtext(mean_scores[acc],ypos[acc],score,weight='bold')
+        pdf.savefig()    
     
         
         
 
         
-### Display the classification scores
-
-#plt.figure()
-#ypos = np.arange(len(comps)) * .1 + .1
-
-#plt.barh(ypos, mean_scores, align='center', height=.05)
-#yticks = [comp[0] + '\nVS\n '+comp[1] +'\n' for comp in comps]
-#plt.yticks(ypos, yticks)
-#plt.xlabel('Classification accuracy')
-#plt.grid(True)
-#plt.title( 'pairwise classifications')
-#for acc in range(len(mean_scores)):
-    #score = str(np.round(mean_scores[acc],2))
-    #plt.figtext(mean_scores[acc],ypos[acc],score,weight='bold')
-
-#plt.show()
