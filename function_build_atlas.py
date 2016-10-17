@@ -100,6 +100,8 @@ def ICAwatershed(landscape_4D,mask_file,studydir,nameMaps,noise_maps,distance=3.
     if cervelet == 'non':
         Cereb = glob.glob(os.path.join(out_dir,'*cereb*.nii'))
         print('Attention les ROIs avec des voxels du cervelet seront effacés !')
+        for j in range(len(Cereb)):
+            os.remove(Cereb[j])
     elif cervelet == 'oui':
         Cereb = glob.glob(os.path.join(out_dir,'*cereb*.nii'))
         print('Les ROIs avec des voxels appartenant au label du cervelet seront conservées, il y en a',len(Cereb))
