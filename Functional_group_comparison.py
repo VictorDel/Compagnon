@@ -48,7 +48,7 @@ estimator = covariance.LedoitWolf(assume_centered=True)
 #GraphLassoCV(n_jobs=-2,assume_centered=True)
 #EmpiricalCovariance(n_jobs=-1,assume_centered=True)
 
-#chose metrics to compute ttest on:  'partial correlation', 'correlation','covariance','precision'
+#chose metrics to compute ttest on:  'partial correlation', 'correlation','covariance','precision','tangent'
 kinds = ['partial correlation', 'correlation'] 
 kind_comp='partial correlation' #metric for classification
 p=0.05 #significativity for display
