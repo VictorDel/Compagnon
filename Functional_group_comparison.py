@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # In[1]:
@@ -30,8 +29,10 @@ import compagnon_statistique as cp_stats
 import compagnon_toolbox as cp_tools
 import compagnon_visualize as cp_plt
 
+
 #memory cache
-mem_dir = '/media/db242421/db242421_data/Script_Python/Compagnon/nilearn_cache/'
+mem_dir = '/media/db242421/db242421_data/cache_nilearn'
+#/media/vd239549/LaCie/victor/nilearn_cache
 
 # Numeric parameters for initial signal processing
 TR = 2.4 #volume acquisition time
@@ -56,12 +57,14 @@ stat_type = 'p' #choose parametric or non parametric ('np') test, see _NPtest an
 Log_ok = False #perform log likelihood
 classif = True #reform svm classification
 Paired = False #should the ttests be paired or not 
- 
+MatReorg = False #should correlogram be reorganized according to correlation clusters 
+    
 atlas_name = 'atlas_indiv_func'               
+atlas_indiv_dir = atlas_name
 
-
-root='/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/'
-atlas_indiv_dir = root + 'atlas_indiv_func'
+root= '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/'
+#/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/
+atlas_indiv_dir = os.path.join(root,atlas_indiv_dir)
 func_type_list = [ 'controls_all','patients_all']#  #name of each group's directory for functional images
 reg_dirs = [ root +'reg',root +'reg']#name of each group's directory for regressors (regressor have to be .txt files)
 reg_suffix='.txt'
@@ -75,7 +78,7 @@ atlas_suffix = '.nii'
 label_suffix = '.csv' #suffix for atlas labels
 #choose report directory and name (default location is in root, default name is atlas_naabsolute
 main_title ='AVCnn_cont_pat_all_'+MC_correction #
-save_dir = os.path.join(root,'funcatlas_reports_db242421')
+save_dir = os.path.join(root,'test_modif')
 try:
     os.makedirs(save_dir)
 except:
@@ -83,28 +86,30 @@ except:
     pass
 save_report=os.path.join(save_dir, main_title+'_'+atlas_name+'_LedoitWolf.pdf')
 if not save_report:
-    save_report=save_dir+ main_title+'_'+atlas_name+'_defaults.pdf'
+    save_report = os.path.join(save_dir, main_title+'_'+atlas_name+'_defaults.pdf')
 
 
 #reference files for atlas checks and target affine
-ref_dir = root+'references/'
-anat_ref_file=glob.glob(ref_dir+'*anat*.nii*')
+ref_dir = os.path.join(root,'references')
+anat_ref_file=glob.glob(os.path.join(ref_dir,'*anat*.nii*'))
 if len(anat_ref_file)>1:
     print('Warning: several anat reference files: '+anat_ref_file[0]+' will be used')
 anat_ref = nb.load(anat_ref_file[0])
-func_ref_file=list(set(glob.glob(ref_dir+'art*.nii*')) - set(glob.glob(ref_dir+'*anat*.nii*')))
+func_ref_file=list(set(glob.glob(os.path.join(ref_dir,'art*.nii*'))) - set(glob.glob(os.path.join(ref_dir,'*anat*.nii*'))))
 if len(func_ref_file)>1:
     print('Warning: several func reference files: '+func_ref_file[0]+' will be used')
 func_ref = nb.load(func_ref_file[0])
 #func_template = nibabel.load
-ref_atlas = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn.nii' #
+ref_atlas =  '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn.nii' #
 #'/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/references/msdl_rois.nii'
+#/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn.nii
 
 display_atlas= nilearn.plotting.plot_prob_atlas(ref_atlas, anat_img=anat_ref_file[0],
                                                 title=atlas_name+'_anat',
                                                 cut_coords = (5,0,0),threshold=0.)
 
 atlas_ref_labels = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn_roi_labels.csv'
+#'/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn_roi_labels.csv'
 #'/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/references/msdl_rois_labels.csv'
 #atlas_ref_labels = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/references/labels_short.csv'
 #labels_ref = np.recfromcsv(atlas_ref_labels)    
@@ -113,7 +118,7 @@ label_colors = np.random.rand(len(labels_ref),3)
 coords_ref  =[plotting.find_xyz_cut_coords(roi) for roi in image.iter_img(ref_atlas)] 
 rois_ref = np.asarray(labels_ref)
 n_r = len(rois_ref)
-l=360./n_r#roi label size in figures     
+l=300./n_r#roi label size in figures     
 visu_ref = ref_atlas
 
 
@@ -154,7 +159,7 @@ for func_type in func_type_list :
     time_series = []
     regressors = []   
     # select all functional images files 
-    func_imgs =  glob.glob(root+func_type+'/*.nii*')
+    func_imgs =  glob.glob(os.path.join(root,func_type+'/*.nii*'))
          
     if not func_imgs:
          print('No functional files for '+func_type+' !')
@@ -172,23 +177,17 @@ for func_type in func_type_list :
         nipObj =  re.search(r'..\d{6}',f_name)
         nip = nipObj.group(0)
         reg_file = glob.glob(os.path.join(reg_dirs[func_index],'*'+nip+'*'+reg_suffix))         
-
-        print(f_name,reg_file)        
+    
+        print (f_name,reg_file)        
         if not reg_file:
-            
             print('could not find matching regressor for file '+f_name+' in '+ reg_dirs[func_index])                 
 
         #select matching atlas file
-        atlas_filename = glob.glob(os.path.join(atlas_dirs[func_index],'*'+nip+'*'+atlas_suffix))[0]
-        #atlas_filename = glob.glob(atlas_dirs[func_index]+'/'+atlas_prefix+'*'+f_name[len(atlas_indiv_dir)+common_+1:len(f_name)-7] + '*.nii*')[0]
-        #labels = open(glob.glob(atlas_dirs[func_index]+'/'+atlas_prefix+'*'+f_name[len(atlas_indiv_dir)+common_+1:len(f_name)-7] + '*'+label_suffix)[0]).read().split()    
+        atlas_filename = glob.glob(os.path.join(atlas_dirs[func_index],'*'+nip+'*'+atlas_suffix))[0]   
         labels = open(glob.glob(os.path.join(atlas_dirs[func_index],'*'+nip+'*'+label_suffix))[0]).read().split() 
         coords =[plotting.find_xyz_cut_coords(roi) for roi in image.iter_img(atlas_filename)] 
-        #rois = labels['name'].T
-        rois = np.asarray(labels)
-     
-        visu = atlas_filename
-    
+        rois = np.asarray(labels)     
+        visu = atlas_filename        
         non_void_indices.append(np.where(rois != 'void')[0])
 
         print('void roi: '+str(np.where(rois == 'void')[0]))
@@ -201,7 +200,7 @@ for func_type in func_type_list :
         if f == random_sub:
                 display_atlas= nilearn.plotting.plot_prob_atlas(atlas_filename,anat_img=nilearn.image.index_img(
                                                     func_imgs[f], 0),title=atlas_name+
-                                                    '_'+func_type,cut_coords = (0,0,0),
+                                                    '_'+func_type,cut_coords = (5,0,0),
                                                     threshold=0.)        
                 at_check.append(plt.gcf())
                 plt.close()
@@ -218,18 +217,20 @@ for func_type in func_type_list :
 
         # extracting time series according to atlas    
         if func_imgs[f]:                        
+                                    
             time_series.append( masker_r.fit_transform(func_imgs[f]))
             if reg_file:            
                 time_serie_r = masker_r.fit_transform(func_imgs[f], confounds=reg_file)                                
+                
                 regressors.append(np.loadtxt(reg_file[0]))                
             else:
                 time_serie_r=masker_r.fit_transform(func_imgs[f])
                 print('no confounds removed')
-
+                
             time_series_r.append(time_serie_r)    
             progress = np.round(100*( (float(f)+1.)/len(func_imgs)))            
             print(str(progress) + '% done in computing time series for '+func_type)
-
+        
     
     
             
@@ -255,20 +256,19 @@ for func_type in func_type_list :
     l_unravelled=[]
     for i in range(n_r):
         for j in range(n_r):
-            l_tmp=[]
+            l_tmp=[]        
             for s in range(len(non_void_indices_all[func_type])):
-                if i in non_void_indices_all[func_type][s] and j in non_void_indices_all[func_type][s]:
-                    
-                    l_tmp.append(s)
+                if i in non_void_indices_all[func_type][s] and j in non_void_indices_all[func_type][s]:                                        
+                    l_tmp.append(s)    
             
             l_unravelled.append(l_tmp)
-
+            
     if len(np.shape(l_unravelled))>1:
         non_void_list = np.reshape(l_unravelled,(n_r,n_r,np.shape(l_unravelled)[-1]))
     else:
         non_void_list = np.reshape(l_unravelled,(n_r,n_r))
-
-    non_void_list_all[func_type] = non_void_list
+                    
+    non_void_list_all[func_type] =     non_void_list    
     non_void_file[func_type] = save_dir+'/'+func_type+'_'+atlas_name+'_non_void.npy'
     np.save(non_void_file[func_type],np.asarray(non_void_list_all[func_type]))
 
@@ -282,13 +282,14 @@ for func_type in func_type_list:
     mean_connectivity = {}     
     for kind in kinds:
         try:
-            conn_measure = nilearn.connectome.ConnectivityMeasure(cov_estimator=estimator,kind=kind)
+            conn_measure = nilearn.connectome.ConnectivityMeasure(cov_estimator =estimator, kind=kind)
             t_s=np.asarray(all_time_series_r[func_type])
             #np.delete(t_s,void_indices_all[func_type])                                
             subjects_connectivity[kind] = conn_measure.fit_transform(t_s)
             
-            if kind == 'robust dispersion':
-                mean_connectivity[kind] = conn_measure.robust_mean_
+            if kind == 'tangent':
+                mean_connectivity[kind] = conn_measure.mean_
+                ###look into how the mean is computed for tangent space to account for missing regions
             else:
                 moy = np.zeros([n_r,n_r])
                 for i in range(n_r):
@@ -296,8 +297,7 @@ for func_type in func_type_list:
                         nvi = [subjects_connectivity[kind][k] [i][j] for k in non_void_list_all[func_type][i][j]]
                         moy[i][j]=np.mean(nvi,axis=0)
                 mean_connectivity[kind] = moy
-                #mean_connectivity[kind] = \
-                    #subjects_connectivity[kind].mean(axis=0)
+
         except:
             print('estimation failed for '+ kind + ' in group ' + func_type)            
             pass
@@ -309,7 +309,6 @@ for func_type in func_type_list:
     individual_connectivity_matrices[func_type] = subjects_connectivity
     mean_connectivity_matrix[func_type] = mean_connectivity
     
-
 comp_list=cp_tools.partperm(func_type_list)
    
 with backend_pdf.PdfPages(save_report) as pdf:
@@ -333,8 +332,15 @@ with backend_pdf.PdfPages(save_report) as pdf:
                 m_span = np.max(np.abs(Mean_mat))                
                 span = [-m_span,m_span]
             #reorganize matrix with hierarchical clustering
-            Mean_mat_r,rois_r,I = cp_tools.matReorg(Mean_mat,labels_ref)           
-            cp_plt.plot_matrices(Mean_mat_r,span ,rois_r,label_colors, 'Average '+func_type + ' ' + kind+ ' across subjects\nTotal average for '+kind+' = '+str(Mean_tot) ,colmap ="bwr",labelsize=l) 
+            if MatReorg :
+                Mean_mat_r,rois_r,I = cp_tools.matReorg(Mean_mat,labels_ref)
+            else:
+                Mean_mat_r = Mean_mat
+                rois_r = labels_ref
+                I = range(n_r)
+                    
+            new_label_colors=[label_colors[i] for i in I] 
+            cp_plt.plot_matrices(Mean_mat_r,span ,rois_r,new_label_colors, 'Average '+func_type + ' ' + kind+ ' across subjects\nTotal average for '+kind+' = '+str(Mean_tot) ,colmap ="bwr",labelsize=l) 
             pdf.savefig()
             plt.close()
             
@@ -371,14 +377,12 @@ with backend_pdf.PdfPages(save_report) as pdf:
                             print ('Warning: number of subjects different between ' + comp[0] + ' and ' +  comp[1] + ' for '+ kind)
                             print('Ttest cant be paired')
                             paired = False
-                        t2[0][i][j]=cp_stats._NPtest(testies_1, testies_2, axis = 0, paired = paired)[0]
-                        t2[1][i][j]=cp_stats._NPtest(testies_1, testies_2, axis = 0, paired = paired)[1]
-
-                #t2 = _NPtest(g1_, g2_, axis = 0, paired = paired)
+                        t2[0][i][j]= cp_stats._NPtest(testies_1, testies_2, axis = 0, paired = paired)[0]
+                        t2[1][i][j]= cp_stats._NPtest(testies_1, testies_2, axis = 0, paired = paired)[1]
+                
+                
             else:
-            
                 for i in range(n_r):
-                    
                     for j in range(n_r):
                         testies_1 = np.asarray([g1[k] [i][j] for k in non_void_list_all[comp[0]][i][j]])
                         testies_2 = np.asarray([g2[k] [i][j] for k in non_void_list_all[comp[1]][i][j]])
@@ -387,17 +391,16 @@ with backend_pdf.PdfPages(save_report) as pdf:
                             print ('Warning: number of subjects different between ' + comp[0] + ' and ' +  comp[1] + ' for '+ kind)
                             print('Ttest cant be paired')
                             paired = False
-
-                        t2[0][i][j]= cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[0]
-                        t2[1][i][j]= cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[1]
-
+                            
+                        t2[0][i][j]=cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[0]                
+                        t2[1][i][j]=cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[1]
+                
                 #t2 = _ttest2(g1, g2, axis = 0, paired = paired)
             if MC_correction == 'FDR':            
                 fdr_correction = cp_stats.fdr(t2[1][:][:])
                 fdr_correction[np.isnan(fdr_correction)] =1.            
                 t2_corrected = cp_stats.sym_fdr(fdr_correction) #fdr multiple comparison correction                                            
             elif MC_correction == 'Bonferoni':
-                
                 b_factor = (n_r*n_r)/2. #bonferoni correction factor = number of pairs of regions
                 t2_corrected = t2[1][:][:]*b_factor 
             else :
@@ -411,16 +414,32 @@ with backend_pdf.PdfPages(save_report) as pdf:
             sym_mask = deepcopy(sym) 
             sym_mask[np.nonzero(sym)] = 1.
             sig_effect = np.multiply(sym_mask,t2[0][:][:])
+            sig_value =  np.multiply(sym_mask,t2_corrected)
+            sig_value[sig_value==0.]=1.
             plotting.plot_connectome(sig_effect, coords_ref,node_color=label_colors,title=  comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' +' Paired = ' + str(paired) +' '+ MC_correction+' corrected p='+ str(p))                                
             pdf.savefig()    
-            plt.close()           
-            cp_plt.plot_matrices(cp_tools.matReorg(t2_corrected,labels,I)[0],[0,p] ,rois_r,label_colors, comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' + ' Paired = ' + str(paired)+' ' + MC_correction+' corrected',colmap ="hot",labelsize=l)                                           
-            
+            plt.close()
+            if MatReorg:
+                sig_value_r,labels_r,I_=cp_tools.matReorg(sig_value,labels,I)
+            else:
+                sig_value_r = sig_value
+                labels_r = labels
+                new_label_colors = label_colors
+            cp_plt.plot_matrices(sig_value_r,[0,2*p] ,rois_r,new_label_colors, comp[1] + ' VS '+ comp[0] + ' ' + kind + ' ' + ' Paired = ' + str(paired)+' ' + MC_correction+' corrected',colmap ="hot",labelsize=l)                                           
+            cp_plt.siglines(sig_value_r,p,new_label_colors,style = 'solid')
             pdf.savefig()
             plt.close()
-            cp_plt.plot_matrices(cp_tools.matReorg(t2[0][:][:],labels,I)[0],[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
+            if MatReorg:
+                t2_r = cp_tools.matReorg(t2[0][:][:],labels,I)[0]
+                labels_r = cp_tools.matReorg(t2[0][:][:],labels,I)[1]
+                
+            else:
+                t2_r = t2
+                labels_r = labels
+                new_label_colors = label_colors
+            cp_plt.plot_matrices(t2_r[0],[-np.max(np.abs(t2[0][:][:])),np.max(np.abs(t2[0][:][:]))] ,rois_r,new_label_colors, comp[1] + ' - '+ comp[0] + ' ' + kind + ' effect' ,colmap ="bwr",labelsize=l)                                           
             pdf.savefig()
-            plt.close()           
+            plt.close()            
                        
     if Log_ok == True and len(individual_connectivity_matrices[comp[0]][kind])!= len(individual_connectivity_matrices [comp[1]] [kind]):
         log_vectors = {}
@@ -445,11 +464,11 @@ with backend_pdf.PdfPages(save_report) as pdf:
                             name = c[0] + '->' + c[1]
                             
                             log_vector = []        
-                            for s in range(min(len(individual_connectivity_matrices[c[0]]['correlation']),len(individual_connectivity_matrices[c[1]]['correlation']))) :    
-                                Md = deepcopy(individual_connectivity_matrices[c[0]]['correlation'][s]) #correlation matrix of subject [sub_list[n] for first group of first comparison in c 
+                            for s in range(min(len(individual_connectivity_matrices[c[0]][kind_comp]),len(individual_connectivity_matrices[c[1]][kind_comp]))) :    
+                                Md = deepcopy(individual_connectivity_matrices[c[0]][kind_comp][s]) #correlation matrix of subject [sub_list[n] for first group of first comparison in c 
                                 Md=np.delete(Md,ntwk_out,axis = 0)
                                 Md=np.delete(Md,ntwk_out,axis = 1)            
-                                Mm = deepcopy(individual_connectivity_matrices[c[1]]['correlation'][s]) #correlation matrix of subject [sub_list[n] for second group of first comparison in c         
+                                Mm = deepcopy(individual_connectivity_matrices[c[1]][kind_comp][s]) #correlation matrix of subject [sub_list[n] for second group of first comparison in c         
                                 Mm=np.delete(Mm,ntwk_out,axis = 0)
                                 Mm=np.delete(Mm,ntwk_out,axis = 1)         
                                 LL = cp_stats.LogL(np.asarray(Md),np.asarray(Mm))
@@ -479,7 +498,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
                         display.add_overlay(nilearn.image.index_img(visu, ntwk[i]),
                                         cmap=plotting.cm.black_red)
                                         
-                    save_tmp=os.getcwd()+'/tmp.png'
+                    save_tmp=os.path.join(os.getcwd(),'tmp.png')
                     display.savefig(save_tmp)     
                     display.close() 
                     
@@ -506,13 +525,12 @@ with backend_pdf.PdfPages(save_report) as pdf:
                     os.remove(save_tmp)
         save_p.close()            
 
-
-
+    
     if classif == True:
         ## Use the connectivity coefficients to classify different groups
         classes = func_type_list
         mean_scores = []
-        save_classif=open(os.path.join(save_dir,main_title+'_classif.txt'),'w+') #txt report of classification scores
+        save_classif=open(os.path.join(save_dir,main_title+'_classif.txt'),'w') #txt report of classification scores
         save_classif.write('Classification accuracy scores\n\n')
         for comp in comps:    
             individual_connectivity_matrices_all=np.vstack((individual_connectivity_matrices[comp[0]][kind_comp],individual_connectivity_matrices[comp[1]][kind_comp]))
@@ -521,16 +539,25 @@ with backend_pdf.PdfPages(save_report) as pdf:
             svc = LinearSVC()
             #Transform the connectivity matrices to 1D arrays
             conectivity_coefs = nilearn.connectome.sym_to_vec(np.concatenate((individual_connectivity_matrices[comp[0]][kind_comp],
-                                                                individual_connectivity_matrices[comp[1]][kind_comp]),axis=0))
+                                                                individual_connectivity_matrices[comp[1]][kind_comp]),axis=0))              
             cv_scores = cross_val_score(svc, conectivity_coefs,block1, cv=cv, scoring='accuracy')
             mean_scores.append(cv_scores.mean())
             save_classif.write('using '+kind_comp + ',' + comp[0]+' VS '+comp[1]+ ':%20s score: %1.2f +- %1.2f' % (kind, cv_scores.mean(),cv_scores.std()))
             save_classif.write('\n')
-
+            
         save_classif.close()
+        
+        ### Display the classification scores
+        plt.figure()
+        ypos = np.arange(len(comps)) * .1 + .1
 
-
-# In[ ]:
-
-
-
+        plt.barh(ypos, mean_scores, align='center', height=.05)
+        yticks = [comp[0] + '\nVS\n '+comp[1] +'\n' for comp in comps]
+        plt.yticks(ypos, yticks)
+        plt.xlabel('Classification accuracy')
+        plt.grid(True)
+        plt.title( 'pairwise classifications')
+        for acc in range(len(mean_scores)):
+            score = str(np.round(mean_scores[acc],2))
+            plt.figtext(mean_scores[acc],ypos[acc],score,weight='bold')
+        pdf.savefig()    
