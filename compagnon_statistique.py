@@ -139,7 +139,7 @@ def corr_to_Z(corr, tol=1e-7):
     Z = corr.copy()  # avoid side effects
     corr_is_one = 1.0 - abs(corr) < tol
     Z[corr_is_one] = np.inf * np.sign(Z[corr_is_one])
-    Z[np.logical_not(corr_is_one)] =         np.arctanh(corr[np.logical_not(corr_is_one)])
+    Z[np.logical_not(corr_is_one)] = np.arctanh(corr[np.logical_not(corr_is_one)])
     return Z
 
 def LogL(M_1,M_2):
