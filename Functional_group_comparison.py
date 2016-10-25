@@ -50,7 +50,7 @@ estimator = covariance.LedoitWolf(assume_centered=True)
 
 #chose metrics to compute ttest on:  'partial correlation', 'correlation','covariance','precision','tangent'
 kinds = ['partial correlation', 'correlation'] 
-kind_comp='partial correlation' #metric for classification
+kind_comps=['partial correlation'] #metric for classification
 p=0.05 #significativity for display
 MC_correction = 'FDR' #chose correction for multiple comparisons 'Bonferoni' or 'FDR'
 stat_type = 'p' #choose parametric or non parametric ('np') test, see _NPtest and _ttest2 to see which test are implemented 
@@ -527,37 +527,38 @@ with backend_pdf.PdfPages(save_report) as pdf:
 
     
     if classif == True:
-        ## Use the connectivity coefficients to classify different groups
-        classes = func_type_list
-        mean_scores = []
-        save_classif=open(os.path.join(save_dir,main_title+'_classif.txt'),'w') #txt report of classification scores
-        save_classif.write('Classification accuracy scores\n\n')
-        for comp in comps:    
-            individual_connectivity_matrices_all=np.vstack((individual_connectivity_matrices[comp[0]][kind_comp],individual_connectivity_matrices[comp[1]][kind_comp]))
-            block1 = np.hstack((np.zeros(len(individual_connectivity_matrices[comp[0]][kind_comp])),np.ones(len(individual_connectivity_matrices[comp[1]][kind_comp])))) 
-            cv = StratifiedShuffleSplit(block1, n_iter=1000)
-            svc = LinearSVC()
-            #Transform the connectivity matrices to 1D arrays
-            conectivity_coefs = nilearn.connectome.sym_to_vec(np.concatenate((individual_connectivity_matrices[comp[0]][kind_comp],
-                                                                individual_connectivity_matrices[comp[1]][kind_comp]),axis=0))              
-            cv_scores = cross_val_score(svc, conectivity_coefs,block1, cv=cv, scoring='accuracy')
-            mean_scores.append(cv_scores.mean())
-            save_classif.write('using '+kind_comp + ',' + comp[0]+' VS '+comp[1]+ ':%20s score: %1.2f +- %1.2f' % (kind, cv_scores.mean(),cv_scores.std()))
-            save_classif.write('\n')
-            
-        save_classif.close()
-        
-        ### Display the classification scores
-        plt.figure()
-        ypos = np.arange(len(comps)) * .1 + .1
+        for kind_comp in kind_comps:
+            ## Use the connectivity coefficients to classify different groups
+            classes = func_type_list
+            mean_scores = []
+            save_classif=open(os.path.join(save_dir,main_title+'_'+kind_comp+'_classif.txt'),'w') #txt report of classification scores
+            save_classif.write('Classification accuracy scores\n\n')
+            for comp in comps:    
+                individual_connectivity_matrices_all=np.vstack((individual_connectivity_matrices[comp[0]][kind_comp],individual_connectivity_matrices[comp[1]][kind_comp]))
+                block1 = np.hstack((np.zeros(len(individual_connectivity_matrices[comp[0]][kind_comp])),np.ones(len(individual_connectivity_matrices[comp[1]][kind_comp])))) 
+                cv = StratifiedShuffleSplit(block1, n_iter=1000)
+                svc = LinearSVC()
+                #Transform the connectivity matrices to 1D arrays
+                conectivity_coefs = nilearn.connectome.sym_to_vec(np.concatenate((individual_connectivity_matrices[comp[0]][kind_comp],
+                                                                    individual_connectivity_matrices[comp[1]][kind_comp]),axis=0))              
+                cv_scores = cross_val_score(svc, conectivity_coefs,block1, cv=cv, scoring='accuracy')
+                mean_scores.append(cv_scores.mean())
+                save_classif.write('using '+kind_comp + ',' + comp[0]+' VS '+comp[1]+ ':%20s score: %1.2f +- %1.2f' % (kind, cv_scores.mean(),cv_scores.std()))
+                save_classif.write('\n')
 
-        plt.barh(ypos, mean_scores, align='center', height=.05)
-        yticks = [comp[0] + '\nVS\n '+comp[1] +'\n' for comp in comps]
-        plt.yticks(ypos, yticks)
-        plt.xlabel('Classification accuracy')
-        plt.grid(True)
-        plt.title( 'pairwise classifications')
-        for acc in range(len(mean_scores)):
-            score = str(np.round(mean_scores[acc],2))
-            plt.figtext(mean_scores[acc],ypos[acc],score,weight='bold')
-        pdf.savefig()    
+            save_classif.close()
+
+            ### Display the classification scores
+            plt.figure()
+            ypos = np.arange(len(comps)) * .1 + .1
+
+            plt.barh(ypos, mean_scores, align='center', height=.05)
+            yticks = [comp[0] + '\nVS\n '+comp[1] +'\n' for comp in comps]
+            plt.yticks(ypos, yticks)
+            plt.xlabel('Classification accuracy')
+            plt.grid(True)
+            plt.title( 'pairwise classifications '+kind_comp)
+            for acc in range(len(mean_scores)):
+                score = str(np.round(mean_scores[acc],2))
+                plt.figtext(mean_scores[acc],ypos[acc],score,weight='bold')
+            pdf.savefig() 
