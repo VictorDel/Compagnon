@@ -531,7 +531,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
             ## Use the connectivity coefficients to classify different groups
             classes = func_type_list
             mean_scores = []
-            save_classif=open(os.path.join(save_dir,main_title+'_classif.txt'),'w') #txt report of classification scores
+            save_classif=open(os.path.join(save_dir,main_title+'_'+kind_comp+'_classif.txt'),'w') #txt report of classification scores
             save_classif.write('Classification accuracy scores\n\n')
             for comp in comps:    
                 individual_connectivity_matrices_all=np.vstack((individual_connectivity_matrices[comp[0]][kind_comp],individual_connectivity_matrices[comp[1]][kind_comp]))
@@ -557,7 +557,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
             plt.yticks(ypos, yticks)
             plt.xlabel('Classification accuracy')
             plt.grid(True)
-            plt.title( 'pairwise classifications')
+            plt.title( 'pairwise classifications '+kind_comp)
             for acc in range(len(mean_scores)):
                 score = str(np.round(mean_scores[acc],2))
                 plt.figtext(mean_scores[acc],ypos[acc],score,weight='bold')
