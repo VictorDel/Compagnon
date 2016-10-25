@@ -62,7 +62,7 @@ except:
 
 for func_type in func_type_list :
     # select all functional images files 
-    func_imgs =  glob.glob(root+func_type+'/*.nii*')
+    func_imgs = glob.glob(os.path.join(root,func_type,'*.nii*'))
          
     if not func_imgs:
          print('No functional files for '+func_type+' !')
