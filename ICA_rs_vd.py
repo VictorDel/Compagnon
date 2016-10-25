@@ -96,15 +96,15 @@ for func_type in func_type_list :
         masker = estimator.masker_
         # Drop output maps to a Nifti   file
         components_img = masker.inverse_transform(estimator.components_)
-        components_img.to_filename(os.path.join(save_dir,func_type+'_'+ names[estimator]+'_alpha15_'+str(n_components)+'_t_'+str(thresh)+'.nii'))
+        components_img.to_filename(os.path.join(save_dir,func_type+'_'+ names[estimator]+'_alpha_'+str(alpha)+'_'+str(n_components)+'_t_'+str(thresh)+'.nii'))
         components_imgs.append(components_img)
 
 
 #### visu maps
 ica_map =   '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/ICA/controls_all_DictionaryLearning_alpha15_20_t_auto.nii'
 for i in range( n_components):
-	img=  image.index_img(ica_map,i)   
-	display = nilearn.plotting.plot_glass_brain(img,title = 'comp number ' + str(i))        
+    img=  image.index_img(ica_map,i)   
+    display = nilearn.plotting.plot_glass_brain(img,title = 'comp number ' + str(i))        
 
 ###
 plotting.plot_prob_atlas(ica_map, view_type='filled_contours',
