@@ -2,7 +2,7 @@ import gen_atlas_indiv_function
 
 
 atlas_template = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn.nii'  #reference atlas on which all individual atlases will be based
-labels = np.recfromcsv('/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnnlabels.csv')#reference roi labels on which all individual atlases will be based
+labels='/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnnlabels.csv'#reference roi labels on which all individual atlases will be based
 root = '/media/db242421/db242421_data/AVCnn_2016_DARTEL/AVCnn_data/patients'
 list_subjects = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/ressources_txt/AVCnn_patients.txt'
 basename = 'func_atlas'
