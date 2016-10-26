@@ -114,7 +114,18 @@ atlas_ref_labels = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atla
 #atlas_ref_labels = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/references/labels_short.csv'
 #labels_ref = np.recfromcsv(atlas_ref_labels)    
 labels_ref = open( atlas_ref_labels).read().split()
-label_colors = np.random.rand(len(labels_ref),3)
+networks = [3,9,6,8,3,11,5,7,7,6]
+ 
+if not networks:
+    label_colors = np.random.rand(len(labels_ref),3)
+else :
+    networks_colors = np.random.rand(len(networks),3)
+    label_colors = np.zeros([len(labels_ref),3])
+    label_colors[0:networks[0]]= networks_colors[0]
+    for i in range(len(networks)-1):
+        label_colors[np.sum(networks[0:i]):np.sum(networks[0:i+1])]= networks_colors[i+1]
+         
+                      
 coords_ref  =[plotting.find_xyz_cut_coords(roi) for roi in image.iter_img(ref_atlas)] 
 rois_ref = np.asarray(labels_ref)
 n_r = len(rois_ref)
