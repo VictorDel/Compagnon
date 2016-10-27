@@ -6,22 +6,18 @@ import os
 import numpy as np
 import nibabel as nb
 import glob
-import matplotlib
 import re
 import matplotlib.pyplot as plt
-import scipy.cluster.hierarchy as sch
 import nilearn.decomposition
-import scipy
 import nilearn.connectome
 from matplotlib.backends import backend_pdf
 from copy import deepcopy
 from nilearn import image
 from sklearn import covariance 
-from nilearn import datasets
 from nilearn.input_data import NiftiMapsMasker
 from nilearn import plotting
 from sklearn.svm import LinearSVC
-from sklearn.cross_validation import StratifiedKFold, cross_val_score, StratifiedShuffleSplit
+from sklearn.cross_validation import cross_val_score, StratifiedShuffleSplit
 
 
 
@@ -66,7 +62,7 @@ root= '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/'
 #/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/
 atlas_indiv_dir = os.path.join(root,atlas_indiv_dir)
 func_type_list = [ 'controls_all','patients_all']#  #name of each group's directory for functional images
-reg_dirs = [ root +'reg',root +'reg']#name of each group's directory for regressors (regressor have to be .txt files)
+reg_dirs = []#name of each group's directory for regressors (regressor have to be .txt files)
 reg_suffix='.txt'
 #reg_prefix = 'art_mv_fmv_wm_vent_ext_hv_' #art_mv_fmv_wm_vent_ext_hv_regressor prefix (regressors must have corresponding functional file name after prefix: swars_ab_123456.nii and reg1_reg2_swars_ab_123456.txt)
 atlas_dirs = [ atlas_indiv_dir,atlas_indiv_dir]#directory containing individual atlases
@@ -187,11 +183,10 @@ for func_type in func_type_list :
         #nipObj =  re.search(r'sub\d{2}_..\d{6}',f_name)
         nipObj =  re.search(r'..\d{6}',f_name)
         nip = nipObj.group(0)
-        reg_file = glob.glob(os.path.join(reg_dirs[func_index],'*'+nip+'*'+reg_suffix))         
-    
-        print (f_name,reg_file)        
-        if not reg_file:
-            print('could not find matching regressor for file '+f_name+' in '+ reg_dirs[func_index])                 
+        if reg_dirs :
+            reg_file = glob.glob(os.path.join(reg_dirs[func_index],'*'+nip+'*'+reg_suffix))         
+            if not reg_file:
+                print('could not find matching regressor for file '+f_name+' in '+ reg_dirs[func_index])           
 
         #select matching atlas file
         atlas_filename = glob.glob(os.path.join(atlas_dirs[func_index],'*'+nip+'*'+atlas_suffix))[0]   
