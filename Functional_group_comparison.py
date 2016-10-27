@@ -17,11 +17,10 @@ from matplotlib.backends import backend_pdf
 from copy import deepcopy
 from nilearn import image
 from sklearn import covariance 
-from nilearn import datasets
 from nilearn.input_data import NiftiMapsMasker
 from nilearn import plotting
 from sklearn.svm import LinearSVC
-from sklearn.cross_validation import StratifiedKFold, cross_val_score, StratifiedShuffleSplit
+from sklearn.cross_validation import cross_val_score, StratifiedShuffleSplit
 
 
 
