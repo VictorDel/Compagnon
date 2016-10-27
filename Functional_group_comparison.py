@@ -247,10 +247,10 @@ for func_type in func_type_list :
     all_time_series[func_type] = time_series    
     all_regressors[func_type] = regressors
     # save time series and regressors_
-    t_s_r_file[func_type] = save_dir+'/'+func_type+'_'+atlas_name+'_time_series_r.npy'
-    t_s_file[func_type] = save_dir+'/'+func_type+'_'+atlas_name+'_time_series.npy'
-    r_file[func_type] = save_dir+'/'+func_type+'_'+atlas_name+'_regressors.npy'
-    non_void_file[func_type] = save_dir+'/'+func_type+'_'+atlas_name+'_non_void.npy'    
+    t_s_r_file[func_type] = os.path.join(save_dir,func_type+'_'+atlas_name+'_time_series_r.npy')
+    t_s_file[func_type] = os.path.join(save_dir,func_type+'_'+atlas_name+'_time_series.npy')
+    r_file[func_type] = os.path.join(save_dir,'_'+atlas_name+'_regressors.npy')
+    non_void_file[func_type] = os.path.join(save_dir,func_type+'_'+atlas_name+'_non_void.npy')    
     
     np.save(t_s_r_file[func_type],np.asarray(all_time_series_r[func_type]))
     np.save(t_s_file[func_type],np.asarray(all_time_series[func_type]))
