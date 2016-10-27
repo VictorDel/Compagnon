@@ -6,12 +6,9 @@ import os
 import numpy as np
 import nibabel as nb
 import glob
-import matplotlib
 import re
 import matplotlib.pyplot as plt
-import scipy.cluster.hierarchy as sch
 import nilearn.decomposition
-import scipy
 import nilearn.connectome
 from matplotlib.backends import backend_pdf
 from copy import deepcopy
