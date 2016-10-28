@@ -184,9 +184,10 @@ for func_type in func_type_list :
         nipObj =  re.search(r'..\d{6}',f_name)
         nip = nipObj.group(0)
         if reg_dirs :
-            reg_file = glob.glob(os.path.join(reg_dirs[func_index],'*'+nip+'*'+reg_suffix))         
-            if not reg_file:
-                print('could not find matching regressor for file '+f_name+' in '+ reg_dirs[func_index])           
+            reg_file = glob.glob(os.path.join(reg_dirs[func_index],'*'+nip+'*'+reg_suffix))
+            print('could not find matching regressor for file '+f_name+' in '+ reg_dirs[func_index])
+        else:
+            reg_file=[]           
 
         #select matching atlas file
         atlas_filename = glob.glob(os.path.join(atlas_dirs[func_index],'*'+nip+'*'+atlas_suffix))[0]   
