@@ -56,8 +56,7 @@ kind_comps=['partial correlation'] #metric for classification
 p=0.05 #significativity for display
 MC_correction = 'FDR' #chose correction for multiple comparisons 'Bonferoni' or 'FDR'
 stat_type = 'p' #choose parametric or non parametric ('np') test, see _NPtest and _ttest2 to see which test are implemented 
-Log_ok = False #perform log likelihood
-classif = False #reform svm classification
+classif = True #reform svm classification
 Paired = False #should the ttests be paired or not 
 MatReorg = False #should correlogram be reorganized according to correlation clusters 
     
