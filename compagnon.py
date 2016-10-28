@@ -1,7 +1,7 @@
 # coding: utf-8
 
-# In[1]:
 
+### imports ###
 import os
 import numpy as np
 import nibabel as nb
@@ -26,17 +26,18 @@ from sklearn.svm import LinearSVC
 from sklearn.cross_validation import StratifiedKFold, cross_val_score, StratifiedShuffleSplit
 
 
-
+### home made functions ###
 import compagnon_statistique as cp_stats
 import compagnon_toolbox as cp_tools
 import compagnon_visualize as cp_plt
 
 
-#memory cache
+### memory cache ###
 mem_dir = '/media/vd239549/LaCie/victor/nilearn_cache'
-#/media/vd239549/LaCie/victor/nilearn_cache
 
-# Numeric parameters for initial signal processing
+
+
+### Numeric parameters for initial signal processing ###
 TR = 2.4 #volume acquisition time
 mask = None #mask to apply to the functional images
 smooth = None #spatial smoothing in mm or None
@@ -44,13 +45,18 @@ LP_filt = None #low pass filtering : value in Hz or None
 HP_filt = None #High pass filtering : value in Hz or None
 stdz = True #standardize time series
 detr = True #detrend time series
-# chose estimator
+
+
+
+### chose estimator ###
 estimator = covariance.LedoitWolf(assume_centered=True)   
 #GroupSparseCovarianceCV(n_jobs=-1,assume_centered=True)
 #GraphLassoCV(n_jobs=-2,assume_centered=True)
 #EmpiricalCovariance(n_jobs=-1,assume_centered=True)
 
-#chose metrics to compute ttest on:  'partial correlation', 'correlation','covariance','precision','tangent'
+
+
+### chose metrics to compute ttest on:  'partial correlation', 'correlation','covariance','precision','tangent' ###
 kinds = ['partial correlation','correlation', 'tangent'] 
 kind_comps=['partial correlation'] #metric for classification
 p=0.05 #significativity for display
@@ -59,40 +65,37 @@ stat_type = 'p' #choose parametric or non parametric ('np') test, see _NPtest an
 classif = True #reform svm classification
 Paired = False #should the ttests be paired or not 
 MatReorg = False #should correlogram be reorganized according to correlation clusters 
-    
+
+
+
+### set up names and filters ###
 atlas_name = 'atlas_indiv_func'               
 atlas_indiv_dir = atlas_name
-
 root= '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/'
-#/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/
 atlas_indiv_dir = os.path.join(root,atlas_indiv_dir)
 func_type_list = [ 'controls_all','patients_all']#  #name of each group's directory for functional images
 reg_dirs = [ ]#name of each group's directory for regressors (regressor have to be .txt files)
 reg_suffix='.txt'
-#reg_prefix = 'art_mv_fmv_wm_vent_ext_hv_' #art_mv_fmv_wm_vent_ext_hv_regressor prefix (regressors must have corresponding functional file name after prefix: swars_ab_123456.nii and reg1_reg2_swars_ab_123456.txt)
 atlas_dirs = [ atlas_indiv_dir,atlas_indiv_dir]#directory containing individual atlases
-#atlas_prefix = '' #atlas name prefix for individual atlases
 atlas_suffix = '.nii'
-#common = 4 #initial differing character between regressors and functional file names
-#common_= 36 #initial differing character between atlasses and functional file names
-
 label_suffix = '.csv' #suffix for atlas labels
-#choose report directory and name (default location is in root, default name is atlas_naabsolute
-main_title ='AVCnn_c_p_net_pc_c_t_' #
 
+
+
+### choose report directory and name (default location is in root, default name is atlas_name ###
+main_title ='AVCnn_c_p_net_pc_c_t_' 
 save_dir = os.path.join(root,'networks')
-
 try:
     os.makedirs(save_dir)
 except:
     print('Warning could not make dir '+save_dir)
     pass
-save_report=os.path.join(save_dir, main_title+'_'+atlas_name+'_LedoitWolf.pdf')
+save_report=os.path.join(save_dir, main_title+'_'+atlas_name+'_LW.pdf')
 if not save_report:
     save_report = os.path.join(save_dir, main_title+'_'+atlas_name+'_defaults.pdf')
 
 
-#reference files for atlas checks and target affine
+### reference files for atlas checks, atlas labels and target affine ###
 ref_dir = os.path.join(root,'references')
 anat_ref_file=glob.glob(os.path.join(ref_dir,'*anat*.nii*'))
 if len(anat_ref_file)>1:
@@ -102,23 +105,17 @@ func_ref_file=list(set(glob.glob(os.path.join(ref_dir,'art*.nii*'))) - set(glob.
 if len(func_ref_file)>1:
     print('Warning: several func reference files: '+func_ref_file[0]+' will be used')
 func_ref = nb.load(func_ref_file[0])
-#func_template = nibabel.load
-ref_atlas =  '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn_4D_networks.nii' #
-#'/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/references/msdl_rois.nii'
-#/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn.nii
-
+ref_atlas =  '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn_4D_networks.nii' 
 display_atlas= nilearn.plotting.plot_prob_atlas(ref_atlas, anat_img=anat_ref_file[0],
                                                 title=atlas_name+'_anat',
                                                 cut_coords = (5,0,0),threshold=0.)
-
 atlas_ref_labels = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn_roi_labels_networks.csv'
-#'/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/atlases/atlas_fonctionel_control_AVCnn/AVCnn_roi_labels.csv'
-#'/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/references/msdl_rois_labels.csv'
-#atlas_ref_labels = '/neurospin/grip/protocols/MRI/Resting_state_Victor_2014/AVCnn/resultats/references/labels_short.csv'
-#labels_ref = np.recfromcsv(atlas_ref_labels)    
 labels_ref = open( atlas_ref_labels).read().split()
-networks = [3,9,6,8,3,11,5,7,7,6]
- 
+
+
+
+### set up roi colors and compute roi coordonates ###
+networks = [3,9,6,8,3,11,5,7,7,6] 
 if not networks:
     label_colors = np.random.rand(len(labels_ref),3)
 else :
@@ -126,24 +123,18 @@ else :
     label_colors = np.zeros([len(labels_ref),3])
     label_colors[0:networks[0]]= networks_colors[0]
     for i in range(len(networks)-1):
-        label_colors[np.sum(networks[0:i]):np.sum(networks[0:i+1])]= networks_colors[i+1]
-         
-                      
+        label_colors[np.sum(networks[0:i]):np.sum(networks[0:i+1])]= networks_colors[i+1]                      
 coords_ref  =[plotting.find_xyz_cut_coords(roi) for roi in image.iter_img(ref_atlas)] 
 rois_ref = np.asarray(labels_ref)
 n_r = len(rois_ref)
 l=300./n_r#roi label size in figures     
 visu_ref = ref_atlas
-
-
-
-
 at_check =[plt.gcf()] #figure handle for atlas check
 
 
 
 
-# prepare pairs for pairwise comparisons between groups   
+### prepare pairs for pairwise comparisons between groups ###   
 comps = [] 
 for func_index in range(len(func_type_list)-1) :
     if func_index != len(func_type_list)-func_index:    
@@ -155,6 +146,7 @@ for func_index in range(len(func_type_list)-1) :
 Bonf = len(comps)
 
 
+### initialize dictionaries ###
 all_time_series_r = {} #regressed time series
 t_s_r_file = {} #names for saving file regressed time series
 all_time_series = {} #detrended and standardized time series 
@@ -166,28 +158,25 @@ non_void_indices_all={} #indices of void regions in individual atlases
 non_void_list_all={}
 
 
+### start loop over groups ###
 for func_type in func_type_list :
     func_index=func_type_list.index(func_type)
     # initialize variables 
     time_series_r = []
     time_series = []
-    regressors = []   
+    regressors = []
+    non_void_indices=[]
     # select all functional images files 
-    func_imgs =  glob.glob(os.path.join(root,func_type+'/*.nii*'))
-         
+    func_imgs =  glob.glob(os.path.join(root,func_type+'/*.nii*'))     
     if not func_imgs:
          print('No functional files for '+func_type+' !')
     
-    # check atlas and functional file normalization on random functional file 
+    # choose random subject to check atlas and functional file normalization on random functional file 
     random_sub =  np.random.randint(0,len(func_imgs)) 
     
-        
-
-    non_void_indices=[]
     # select matching regressor files
     for f_name in func_imgs:            
         f=func_imgs.index(f_name)
-        #nipObj =  re.search(r'sub\d{2}_..\d{6}',f_name)
         nipObj =  re.search(r'..\d{6}',f_name)
         nip = nipObj.group(0)
         if reg_dirs :
@@ -204,14 +193,8 @@ for func_type in func_type_list :
         rois = np.asarray(labels)     
         visu = atlas_filename        
         non_void_indices.append(np.where(rois != 'void')[0])
-
         print('void roi: '+str(np.where(rois == 'void')[0]))
-
-        all_ntwks = range(n_r)          
-        networks = {'All ROIs':all_ntwks}
-
-
-
+        #check atlas and functional file normalization on random functional file
         if f == random_sub:
                 display_atlas= nilearn.plotting.plot_prob_atlas(atlas_filename,anat_img=nilearn.image.index_img(
                                                     func_imgs[f], 0),title=atlas_name+
@@ -220,24 +203,11 @@ for func_type in func_type_list :
                 at_check.append(plt.gcf())
                 plt.close()
 
-
-
-
-        #masker for raw (stdz and detrended) time series                              
-        ##masker_r = NiftiMapsMasker(atlas_filename, mask_img=mask, smoothing_fwhm=None,
-        ##                         standardize=stdz,detrend=detr, low_pass=None, 
-        ##                         high_pass=None,t_r=TR, resampling_target='data',
-        ##                         memory=mem_dir,memory_level=5, verbose=0) 
-
-
         # extracting time series according to atlas    
         if func_imgs[f]:                        
             time_series_subj_raw = regions.img_to_signals_maps(func_imgs[f],atlas_filename)[0]
-             
-            #time_series.append( masker_r.fit_transform(func_imgs[f]))
             time_series.append(time_series_subj_raw)
-            if not reg_file:
-               
+            if not reg_file:               
                 time_serie_r=signal.clean(time_series_subj_raw,standardize=stdz,
                                           detrend=detr,low_pass=LP_filt,
                                           high_pass=HP_filt, t_r=TR)
@@ -248,8 +218,7 @@ for func_type in func_type_list :
                                           detrend=detr,low_pass=LP_filt,
                                           high_pass=HP_filt, t_r=TR, confounds=reg_file)
                 regressors.append(np.loadtxt(reg_file[0]))
-                
-                
+                               
             time_series_r.append(time_serie_r)    
             progress = np.round(100*( (float(f)+1.)/len(func_imgs)))            
             print(str(progress) + '% done in computing time series for '+func_type)
@@ -460,7 +429,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
             pdf.savefig()
             plt.close()
             if MatReorg:
-                t2_r = cp_tools.matReorg(t2[0][:][:],labels,I)[0]
+                t2_r = cp_tools.matReorg(t2[0][:][:],labels,I)
                 labels_r = cp_tools.matReorg(t2[0][:][:],labels,I)[1]
                 
             else:

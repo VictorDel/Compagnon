@@ -437,7 +437,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
             pdf.savefig()
             plt.close()
             if MatReorg:
-                t2_r = cp_tools.matReorg(t2[0][:][:],labels,I)[0]
+                t2_r = cp_tools.matReorg(t2[0][:][:],labels,I)
                 labels_r = cp_tools.matReorg(t2[0][:][:],labels,I)[1]
                 
             else:
@@ -550,7 +550,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
                                                                     individual_connectivity_matrices[comp[1]][kind_comp]),axis=0))              
                 cv_scores = cross_val_score(svc, conectivity_coefs,block1, cv=cv, scoring='accuracy')
                 mean_scores.append(cv_scores.mean())
-                save_classif.write('using '+kind_comp + ',' + comp[0]+' VS '+comp[1]+ ':%20s score: %1.2f +- %1.2f' % (kind, cv_scores.mean(),cv_scores.std()))
+                save_classif.write('using '+kind_comp + ' for ' + comp[0]+' VS '+comp[1]+ ': score: %1.2f +- %1.2f' % ( cv_scores.mean(),cv_scores.std()))
                 save_classif.write('\n')
 
             save_classif.close()
