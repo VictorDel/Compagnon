@@ -368,6 +368,20 @@ with backend_pdf.PdfPages(save_report) as pdf:
             t2 = np.zeros([2,n_r,n_r])
             if stat_type =='np':
 
+                for i in range(n_r):
+                    for j in range(n_r):
+                        testies_1 = np.asarray([g1[k] [i][j] for k in non_void_list_all[comp[0]][i][j]])
+                        testies_2 = np.asarray([g2[k] [i][j] for k in non_void_list_all[comp[1]][i][j]])
+                        # check if paired ttest is possible
+                        if len(non_void_list_all[comp[0]][i][j])!= len(non_void_list_all[comp[1]][i][j]) and Paired==True:
+                            print ('Warning: number of subjects different between ' + comp[0] + ' and ' +  comp[1] + ' for '+ kind)
+                            print('Ttest cant be paired')
+                            paired = False
+                        t2[0][i][j]= cp_stats._NPtest(testies_1, testies_2, axis = 0, paired = paired)[0]
+                        t2[1][i][j]= cp_stats._NPtest(testies_1, testies_2, axis = 0, paired = paired)[1]
+                
+                
+            else:
                 if kind == 'tangent':
                     for i in range(n_r):
                         for j in range(n_r):
@@ -448,12 +462,13 @@ with backend_pdf.PdfPages(save_report) as pdf:
                                    
 ###classifier    
     if classif == True:
+        save_classif=open(os.path.join(save_dir,main_title+'_classif.txt'),'w') #txt report of classification scores
+        save_classif.write('Classification accuracy scores\n\n')
         for kind_comp in kind_comps:
             ## Use the connectivity coefficients to classify different groups
             classes = func_type_list
             mean_scores = []
-            save_classif=open(os.path.join(save_dir,main_title+'_'+kind_comp+'_classif.txt'),'w') #txt report of classification scores
-            save_classif.write('Classification accuracy scores\n\n')
+
             for comp in comps:    
                 individual_connectivity_matrices_all=np.vstack((individual_connectivity_matrices[comp[0]][kind_comp],individual_connectivity_matrices[comp[1]][kind_comp]))
                 block1 = np.hstack((np.zeros(len(individual_connectivity_matrices[comp[0]][kind_comp])),np.ones(len(individual_connectivity_matrices[comp[1]][kind_comp])))) 
