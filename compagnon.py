@@ -486,6 +486,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
 
             ### Display the classification scores
             plt.figure()
+            plt.xlim(0,1)
             ypos = np.arange(len(comps)) * .1 + .1
 
             plt.barh(ypos, mean_scores, align='center', height=.05)
