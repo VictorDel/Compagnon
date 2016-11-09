@@ -116,7 +116,7 @@ labels_ref = open( atlas_ref_labels).read().split()
 
 ### set up roi colors and compute roi coordonates ###
 networks = [3,9,6,8,3,11,5,7,7,6] 
-networks_colors = [[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,0.5],[0,1,1],[0,0,0],[0.5,1,0],[1,0,0.5],[0,1,0.5]]
+networks_colors = [[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0.6,0],[0,1,1],[0,0,0],[0.5,1,0],[1,0,0.5],[0,1,0.5]]
 if not networks :
     label_colors = np.random.rand(len(labels_ref),3)
 else :
