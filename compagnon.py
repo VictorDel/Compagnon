@@ -482,7 +482,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
                 save_classif.write('using '+kind_comp + ',' + comp[0]+' VS '+comp[1]+ ':%20s score: %1.2f +- %1.2f' % (kind_comp, cv_scores.mean(),cv_scores.std()))
                 save_classif.write('\n')
 
-            save_classif.close()
+            
 
             ### Display the classification scores
             plt.figure()
@@ -497,4 +497,6 @@ with backend_pdf.PdfPages(save_report) as pdf:
             for acc in range(len(mean_scores)):
                 score = str(np.round(mean_scores[acc],2))
                 plt.figtext(mean_scores[acc],ypos[acc],score,weight='bold')
-            pdf.savefig() 
+            pdf.savefig()
+            
+        save_classif.close()        
