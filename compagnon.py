@@ -58,7 +58,7 @@ estimator = covariance.LedoitWolf(assume_centered=True)
 
 ### chose metrics to compute ttest on:  'partial correlation', 'correlation','covariance','precision','tangent' ###
 kinds = ['partial correlation','correlation', 'tangent'] 
-kind_comps=['partial correlation'] #metric for classification
+kind_comps=['partial correlation','correlation','tangent'] #metric for classification
 p=0.05 #significativity for display
 MC_correction = 'FDR' #chose correction for multiple comparisons 'Bonferoni' or 'FDR'
 stat_type = 'p' #choose parametric or non parametric ('np') test, see _NPtest and _ttest2 to see which test are implemented 
@@ -83,8 +83,8 @@ label_suffix = '.csv' #suffix for atlas labels
 
 
 ### choose report directory and name (default location is in root, default name is atlas_name ###
-main_title ='AVCnn_c_p_net_pc_c_t_' 
-save_dir = os.path.join(root,'networks')
+main_title ='AVCnn_c_p_' 
+save_dir = os.path.join(root,'reports_new_atlas')
 try:
     os.makedirs(save_dir)
 except:
@@ -116,7 +116,7 @@ labels_ref = open( atlas_ref_labels).read().split()
 
 ### set up roi colors and compute roi coordonates ###
 networks = [3,9,6,8,3,11,5,7,7,6] 
-networks_colors = [[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1],[0,0,0],[0.5,1,0],[1,0,0.5],[0,1,0.5]]
+networks_colors = [[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,0.5],[0,1,1],[0,0,0],[0.5,1,0],[1,0,0.5],[0,1,0.5]]
 if not networks :
     label_colors = np.random.rand(len(labels_ref),3)
 else :
@@ -367,32 +367,33 @@ with backend_pdf.PdfPages(save_report) as pdf:
             t2 = np.zeros([2,n_r,n_r])
             if stat_type =='np':
 
-                for i in range(n_r):
-                    for j in range(n_r):
-                        testies_1 = np.asarray([g1[k] [i][j] for k in non_void_list_all[comp[0]][i][j]])
-                        testies_2 = np.asarray([g2[k] [i][j] for k in non_void_list_all[comp[1]][i][j]])
-                        # check if paired ttest is possible
-                        if len(non_void_list_all[comp[0]][i][j])!= len(non_void_list_all[comp[1]][i][j]) and Paired==True:
-                            print ('Warning: number of subjects different between ' + comp[0] + ' and ' +  comp[1] + ' for '+ kind)
-                            print('Ttest cant be paired')
-                            paired = False
-                        t2[0][i][j]= cp_stats._NPtest(testies_1, testies_2, axis = 0, paired = paired)[0]
-                        t2[1][i][j]= cp_stats._NPtest(testies_1, testies_2, axis = 0, paired = paired)[1]
-                
-                
-            else:
-                for i in range(n_r):
-                    for j in range(n_r):
-                        testies_1 = np.asarray([g1[k] [i][j] for k in non_void_list_all[comp[0]][i][j]])
-                        testies_2 = np.asarray([g2[k] [i][j] for k in non_void_list_all[comp[1]][i][j]])
-                        # check if paired ttest is possible
-                        if len(non_void_list_all[comp[0]][i][j])!= len(non_void_list_all[comp[1]][i][j]) and Paired==True:
-                            print ('Warning: number of subjects different between ' + comp[0] + ' and ' +  comp[1] + ' for '+ kind)
-                            print('Ttest cant be paired')
-                            paired = False
-                            
-                        t2[0][i][j]=cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[0]                
-                        t2[1][i][j]=cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[1]
+                if kind == 'tangent':
+                    for i in range(n_r):
+                        for j in range(n_r):
+                            testies_1 = np.asarray([g1[k] [i][j] for k in non_void_list_all[comp[0]][i][j]])
+                            testies_2 = np.asarray([g2[k] [i][j] for k in non_void_list_all[comp[1]][i][j]])
+                            # check if paired ttest is possible
+                            if len(non_void_list_all[comp[0]][i][j])!= len(non_void_list_all[comp[1]][i][j]) and Paired==True:
+                                print ('Warning: number of subjects different between ' + comp[0] + ' and ' +  comp[1] + ' for '+ kind)
+                                print('Ttest cant be paired')
+                                paired = False
+
+                            t2[0][i][j]=cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[0]                
+                            t2[1][i][j]=cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[1]
+                            t2[0]=mean_connectivity_matrix[comp[0]][kind]-mean_connectivity_matrix[comp[1]][kind] 
+                else:   
+                    for i in range(n_r):
+                        for j in range(n_r):
+                            testies_1 = np.asarray([g1[k] [i][j] for k in non_void_list_all[comp[0]][i][j]])
+                            testies_2 = np.asarray([g2[k] [i][j] for k in non_void_list_all[comp[1]][i][j]])
+                            # check if paired ttest is possible
+                            if len(non_void_list_all[comp[0]][i][j])!= len(non_void_list_all[comp[1]][i][j]) and Paired==True:
+                                print ('Warning: number of subjects different between ' + comp[0] + ' and ' +  comp[1] + ' for '+ kind)
+                                print('Ttest cant be paired')
+                                paired = False
+
+                            t2[0][i][j]=cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[0]                
+                            t2[1][i][j]=cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[1]
                 
                 #t2 = _ttest2(g1, g2, axis = 0, paired = paired)
             if MC_correction == 'FDR':            
