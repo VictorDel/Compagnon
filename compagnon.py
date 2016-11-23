@@ -393,7 +393,7 @@ with backend_pdf.PdfPages(save_report) as pdf:
                                 print('Ttest cant be paired')
                                 paired = False
 
-                            t2[0][i][j]=cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[0]                
+                            #t2[0][i][j]=cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[0]                
                             t2[1][i][j]=cp_stats._ttest2(testies_1, testies_2, axis = 0, paired = paired)[1]
                             t2[0]=mean_connectivity_matrix[comp[0]][kind]-mean_connectivity_matrix[comp[1]][kind] 
                 else:   
